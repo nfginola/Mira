@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{0893eae2-a7bc-42e2-8f21-5c2925c5803d}</ProjectGuid>
+    <RootNamespace>Mira</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)vendor\DirectXHeaders\include\directx;$(ProjectDir)vendor\D3D12MemoryAllocator\src;$(ProjectDir)vendor\DirectXShaderCompiler\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;$(ProjectDir)vendor\DirectXShaderCompiler\lib\$(Platform)\dxcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent>
+      <Command>mkdir "$(TargetDir)D3D12"
+copy "$(ProjectDir)vendor\AgilitySDK\bin\$(Platform)\D3D12Core.dll" "$(TargetDir)D3D12\D3D12Core.dll"
+copy "$(ProjectDir)vendor\AgilitySDK\bin\$(Platform)\d3d12SDKLayers.dll" "$(TargetDir)D3D12\d3d12SDKLayers.dll"
+
+copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
+copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(TargetDir)dxil.dll"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)vendor\DirectXHeaders\include\directx;$(ProjectDir)vendor\D3D12MemoryAllocator\src;$(ProjectDir)vendor\DirectXShaderCompiler\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;$(ProjectDir)vendor\DirectXShaderCompiler\lib\$(Platform)\dxcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent>
+      <Command>mkdir "$(TargetDir)D3D12"
+copy "$(ProjectDir)vendor\AgilitySDK\bin\$(Platform)\D3D12Core.dll" "$(TargetDir)D3D12\D3D12Core.dll"
+copy "$(ProjectDir)vendor\AgilitySDK\bin\$(Platform)\d3d12SDKLayers.dll" "$(TargetDir)D3D12\d3d12SDKLayers.dll"
+
+copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
+copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(TargetDir)dxil.dll"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="src\RHI\DX12\ShaderCompiler_DXC.cpp" />
+    <ClCompile Include="src\RHI\DX12\RenderCommandList_DX12.cpp" />
+    <ClCompile Include="src\RHI\DX12\Utilities\DX12Fence.cpp" />
+    <ClCompile Include="src\RHI\DX12\Utilities\DX12Queue.cpp" />
+    <ClCompile Include="src\RHI\DX12\Utilities\DX12DescriptorHeap.cpp" />
+    <ClCompile Include="src\RHI\DX12\Utilities\DX12DescriptorManager.cpp" />
+    <ClCompile Include="src\HandlePool.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\RHI\DX12\Utilities\DX12DescriptorAllocatorDMA.cpp" />
+    <ClCompile Include="src\RHI\DX12\RenderBackend_DX12.cpp" />
+    <ClCompile Include="src\RHI\DX12\RenderDevice_DX12.cpp" />
+    <ClCompile Include="src\RHI\DX12\Utilities\DX12RenderPass.cpp" />
+    <ClCompile Include="src\RHI\DX12\Utilities\StructTranslator_DX12.cpp" />
+    <ClCompile Include="src\RHI\PipelineBuilder.cpp" />
+    <ClCompile Include="src\RHI\DX12\SwapChain_DX12.cpp" />
+    <ClCompile Include="vendor\D3D12MemoryAllocator\src\D3D12MemAlloc.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\RHI\DX12\ShaderCompiler_DXC.h" />
+    <ClInclude Include="src\RHI\DX12\RenderCommandList_DX12.h" />
+    <ClInclude Include="src\RHI\DX12\Utilities\DX12RenderPass.h" />
+    <ClInclude Include="src\RHI\DX12\Utilities\StructTranslator_DX12.h" />
+    <ClInclude Include="src\RHI\DX12\Utilities\DX12Fence.h" />
+    <ClInclude Include="src\RHI\DX12\Utilities\DX12Queue.h" />
+    <ClInclude Include="src\RHI\DX12\Utilities\DX12DescriptorHeap.h" />
+    <ClInclude Include="src\RHI\DX12\Utilities\DX12DescriptorManager.h" />
+    <ClInclude Include="src\HandlePool.h" />
+    <ClInclude Include="src\Common.h" />
+    <ClInclude Include="src\RHI\DX12\Utilities\DX12DescriptorAllocatorDMA.h" />
+    <ClInclude Include="src\RHI\DX12\Utilities\DX12DescriptorChunk.h" />
+    <ClInclude Include="src\RHI\DX12\DX12CommonIncludes.h" />
+    <ClInclude Include="src\RHI\PipelineBuilder.h" />
+    <ClInclude Include="src\RHI\PipelineTypes.h" />
+    <ClInclude Include="src\RHI\RenderBackend.h" />
+    <ClInclude Include="src\RHI\DX12\RenderBackend_DX12.h" />
+    <ClInclude Include="src\RHI\RenderCommandList.h" />
+    <ClInclude Include="src\RHI\RenderDevice.h" />
+    <ClInclude Include="src\RHI\DX12\RenderDevice_DX12.h" />
+    <ClInclude Include="src\RHI\RenderPassTypes.h" />
+    <ClInclude Include="src\RHI\ResourceTypes.h" />
+    <ClInclude Include="src\RHI\RHIDefines.h" />
+    <ClInclude Include="src\RHI\ShaderCompiler.h" />
+    <ClInclude Include="src\RHI\ShaderTypes.h" />
+    <ClInclude Include="src\RHI\SwapChain.h" />
+    <ClInclude Include="src\RHI\SyncReceipt.h" />
+    <ClInclude Include="src\TypedHandlePool.h" />
+    <ClInclude Include="src\RHI\RenderResourceHandle.h" />
+    <ClInclude Include="src\RHI\RHITypes.h" />
+    <ClInclude Include="src\RHI\DX12\SwapChain_DX12.h" />
+    <ClInclude Include="vendor\D3D12MemoryAllocator\src\D3D12MemAlloc.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
