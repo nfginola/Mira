@@ -34,4 +34,5 @@ namespace mira
 	D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE to_internal(RenderPassBeginAccessType access);
 	D3D12_RENDER_PASS_ENDING_ACCESS_TYPE to_internal(RenderPassEndingAccessType access);
 	D3D12_RENDER_PASS_FLAGS to_internal(RenderPassFlag flags);
+	D3D12_RESOURCE_STATES to_internal(ResourceState state);
 }

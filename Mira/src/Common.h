@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <array>
 #include <unordered_map>
+#include <variant>
 
 using f32 = float;
 using f64 = double;

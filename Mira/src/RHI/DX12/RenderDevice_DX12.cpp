@@ -69,6 +69,7 @@ namespace mira
 
 	RenderDevice_DX12::~RenderDevice_DX12()
 	{
+
 	}
 
 	SwapChain* RenderDevice_DX12::create_swapchain(void* hwnd, const std::vector<Texture>& swapchain_buffer_handles)
@@ -129,11 +130,11 @@ namespace mira
 			views |= mira::ViewType::UnorderedAccess;
 
 		// Store in contiguous array (constant time look-up)
-		if (m_resources.size() <= handle.key())
-			m_resources.resize(m_resources.size() * 2);
+		if (m_resources.size() <= get_slot(handle.handle))
+			m_resources.resize(m_resources.size() * 4);
 
-		assert(!m_resources[handle.key()].has_value());
-		m_resources[handle.key()] = storage;
+		assert(!m_resources[get_slot(handle.handle)].has_value());
+		m_resources[get_slot(handle.handle)] = storage;
 
 		// Create full view
 		create_subresource(handle, views, 0, desc.size);
@@ -210,10 +211,10 @@ namespace mira
 		storage->subresources.push_back(srv_desc);
 
 		// Insert to storage
-		if (m_resources.size() <= handle.key())
-			m_resources.resize(m_resources.size() * 2);
-		assert(!m_resources[handle.key()].has_value());
-		m_resources[handle.key()] = storage;
+		if (m_resources.size() <= get_slot(handle.handle))
+			m_resources.resize(m_resources.size() * 4);
+		assert(!m_resources[get_slot(handle.handle)].has_value());
+		m_resources[get_slot(handle.handle)] = storage;
 	}
 
 	void RenderDevice_DX12::create_graphics_pipeline(const GraphicsPipelineDesc& desc, Pipeline handle)
@@ -233,16 +234,14 @@ namespace mira
 		storage->pipeline = pso;
 
 		// Insert to storage
-		if (m_resources.size() <= handle.key())
-			m_resources.resize(m_resources.size() * 2);
-		assert(!m_resources[handle.key()].has_value());
-		m_resources[handle.key()] = storage;
+		if (m_resources.size() <= get_slot(handle.handle))
+			m_resources.resize(m_resources.size() * 4);
+		assert(!m_resources[get_slot(handle.handle)].has_value());
+		m_resources[get_slot(handle.handle)] = storage;
 	}
 
 	void RenderDevice_DX12::create_renderpass(const RenderPassDesc& desc, RenderPass handle)
 	{
-		assert(!m_resources[handle.key()].has_value());
-
 		auto storage = std::make_shared<RenderPass_Storage>();
 		storage->desc = desc;
 		storage->flags = to_internal(desc.flags);
@@ -251,8 +250,8 @@ namespace mira
 		auto& descs = storage->render_targets;
 		for (const auto& rtd : desc.render_target_descs)
 		{
-			assert(m_resources[rtd.texture.key()].has_value());
-			auto res = (Texture_Storage*)m_resources[rtd.texture.key()]->get();
+			assert(m_resources[get_slot(rtd.texture.handle)].has_value());
+			auto res = (Texture_Storage*)m_resources[get_slot(rtd.texture.handle)]->get();
 
 			auto api = to_internal(rtd);
 			assert(res->cpu_subresources[rtd.subresource].first.has_value());
@@ -271,34 +270,37 @@ namespace mira
 		// Translate depth stencil 
 		if (desc.depth_stencil_desc.has_value())
 		{
-			assert(m_resources[desc.depth_stencil_desc->texture.key()].has_value());
-			auto res = (Texture_Storage*)m_resources[desc.depth_stencil_desc->texture.key()]->get();
+			assert(m_resources[get_slot(desc.depth_stencil_desc->texture.handle)].has_value());
+			auto res = (Texture_Storage*)m_resources[get_slot(desc.depth_stencil_desc->texture.handle)]->get();
 			auto depth_api = to_internal(*desc.depth_stencil_desc);
 			assert(res->cpu_subresources[desc.depth_stencil_desc->subresource].first.has_value());
 			depth_api.cpuDescriptor = res->cpu_subresources[desc.depth_stencil_desc->subresource].first->cpu_handle(0);
 			storage->depth_stencil = depth_api;
 		}
 		
-		m_resources[handle.key()] = storage;
+		if (m_resources.size() <= get_slot(handle.handle))
+			m_resources.resize(m_resources.size() * 4);
+		assert(!m_resources[get_slot(handle.handle)].has_value());
+		m_resources[get_slot(handle.handle)] = storage;
 	}
 
 	void RenderDevice_DX12::free_buffer(Buffer handle)
 	{
-		assert(m_resources[handle.key()].has_value());
+		assert(m_resources[get_slot(handle.handle)].has_value());
 
-		auto res = (Buffer_Storage*)m_resources[handle.key()]->get();
+		auto res = (Buffer_Storage*)m_resources[get_slot(handle.handle)]->get();
 		for (auto& subres : res->subresources)
 			m_descriptor_mgr->free(&subres);
 
-		m_resources[handle.key()]->reset();
-		m_resources[handle.key()] = {};
+		m_resources[get_slot(handle.handle)]->reset();
+		m_resources[get_slot(handle.handle)] = {};
 	}
 
 	void RenderDevice_DX12::free_texture(Texture handle)
 	{
-		assert(m_resources[handle.key()].has_value());
+		assert(m_resources[get_slot(handle.handle)].has_value());
 
-		auto res = (Texture_Storage*)m_resources[handle.key()]->get();
+		auto res = (Texture_Storage*)m_resources[get_slot(handle.handle)]->get();
 		for (auto& subres : res->subresources)
 			m_descriptor_mgr->free(&subres);
 
@@ -310,8 +312,8 @@ namespace mira
 				m_descriptor_mgr->free(&(*dsv));
 		}
 
-		m_resources[handle.key()].reset();
-		m_resources[handle.key()] = {};
+		m_resources[get_slot(handle.handle)].reset();
+		m_resources[get_slot(handle.handle)] = {};
 	}
 
 	u32 RenderDevice_DX12::create_subresource(Buffer buffer, ViewType view, u32 offset, u32 size, bool raw)
@@ -320,7 +322,7 @@ namespace mira
 		if ((view & ViewType::DepthStencil) || (view & ViewType::RenderTarget))
 			assert(false);
 
-		auto resource = (Buffer_Storage*)m_resources[buffer.key()]->get();
+		auto resource = (Buffer_Storage*)m_resources[get_slot(buffer.handle)]->get();
 		const auto& desc = resource->desc;
 
 
@@ -388,17 +390,17 @@ namespace mira
 
 	u32 RenderDevice_DX12::get_global_descriptor(Buffer buffer, u32 subresource)
 	{
-		assert(m_resources[buffer.key()].has_value());		// handle use after delete
+		assert(m_resources[get_slot(buffer.handle)].has_value());		// handle use after delete
 
-		const auto& resource = (Buffer_Storage*)m_resources[buffer.key()]->get();
+		const auto& resource = (Buffer_Storage*)m_resources[get_slot(buffer.handle)]->get();
 		return (u32)resource->subresources[subresource].index_offset_from_base();
 	}
 
 	u32 RenderDevice_DX12::get_global_descriptor(Texture texture, u32 subresource)
 	{
-		assert(m_resources[texture.key()].has_value());	// handle use after delete
+		assert(m_resources[get_slot(texture.handle)].has_value());	// handle use after delete
 
-		const auto& resource = (Buffer_Storage*)m_resources[texture.key()]->get();
+		const auto& resource = (Buffer_Storage*)m_resources[get_slot(texture.handle)]->get();
 		return (u32)resource->subresources[subresource].index_offset_from_base();
 	}
 
@@ -566,9 +568,9 @@ namespace mira
 
 	void RenderDevice_DX12::upload_to_buffer(Buffer buffer, u32 dst_offset, void* data, u32 size)
 	{
-		assert(m_resources[buffer.key()].has_value());
+		assert(m_resources[get_slot(buffer.handle)].has_value());
 
-		auto res = (Buffer_Storage*)m_resources[buffer.key()]->get();
+		auto res = (Buffer_Storage*)m_resources[get_slot(buffer.handle)]->get();
 
 		// Ensure buffer is mappable
 		assert(res->mapped_resource != nullptr);
@@ -596,36 +598,41 @@ namespace mira
 
 	ID3D12Resource* RenderDevice_DX12::get_api_buffer(Buffer buffer) const
 	{
-		assert(m_resources[buffer.key()].has_value());	// handle use after delete
-		const auto& resource = *(Buffer_Storage*)m_resources[buffer.key()]->get();
+		assert(m_resources[get_slot(buffer.handle)].has_value());	// handle use after delete
+		const auto& resource = *(Buffer_Storage*)m_resources[get_slot(buffer.handle)]->get();
 		return resource.resource.Get();
 	}
 
 	ID3D12Resource* RenderDevice_DX12::get_api_texture(Texture texture) const
 	{
-		assert(m_resources[texture.key()].has_value());	// handle use after delete
-		const auto& resource = *(Texture_Storage*)m_resources[texture.key()]->get();
+		assert(m_resources[get_slot(texture.handle)].has_value());	// handle use after delete
+		const auto& resource = *(Texture_Storage*)m_resources[get_slot(texture.handle)]->get();
 		return resource.resource.Get();
 	}
 
 	u32 RenderDevice_DX12::get_api_buffer_size(Buffer buffer) const
 	{
-		assert(m_resources[buffer.key()].has_value());	// handle use after delete
-		const auto& resource = *(Buffer_Storage*)m_resources[buffer.key()]->get();
+		assert(m_resources[get_slot(buffer.handle)].has_value());	// handle use after delete
+		const auto& resource = *(Buffer_Storage*)m_resources[get_slot(buffer.handle)]->get();
 		return resource.desc.size;
+	}
+
+	D3D12_RESOURCE_STATES RenderDevice_DX12::get_resource_state(ResourceState state) const
+	{
+		return to_internal(state);
 	}
 
 	D3D_PRIMITIVE_TOPOLOGY RenderDevice_DX12::get_api_topology(Pipeline pipeline) const
 	{
-		assert(m_resources[pipeline.key()].has_value());	// handle use after delete
-		const auto& resource = *(Pipeline_Storage*)m_resources[pipeline.key()]->get();
+		assert(m_resources[get_slot(pipeline.handle)].has_value());	// handle use after delete
+		const auto& resource = *(Pipeline_Storage*)m_resources[get_slot(pipeline.handle)]->get();
 		return resource.topology;
 	}
 
 	ID3D12PipelineState* RenderDevice_DX12::get_api_pipeline(Pipeline pipeline) const
 	{
-		assert(m_resources[pipeline.key()].has_value());	// handle use after delete
-		const auto& resource = *(Pipeline_Storage*)m_resources[pipeline.key()]->get();
+		assert(m_resources[get_slot(pipeline.handle)].has_value());	// handle use after delete
+		const auto& resource = *(Pipeline_Storage*)m_resources[get_slot(pipeline.handle)]->get();
 		return resource.pipeline.Get();
 	}
 
@@ -646,22 +653,22 @@ namespace mira
 
 	const std::vector<D3D12_RENDER_PASS_RENDER_TARGET_DESC>& RenderDevice_DX12::get_rp_rts(RenderPass rp) const
 	{
-		assert(m_resources[rp.key()].has_value());
-		auto res = (RenderPass_Storage*)m_resources[rp.key()]->get();
+		assert(m_resources[get_slot(rp.handle)].has_value());
+		auto res = (RenderPass_Storage*)m_resources[get_slot(rp.handle)]->get();
 		return res->render_targets;
 	}
 
 	std::optional<D3D12_RENDER_PASS_DEPTH_STENCIL_DESC> RenderDevice_DX12::get_rp_depth_stencil(RenderPass rp) const
 	{
-		assert(m_resources[rp.key()].has_value());
-		auto res = (RenderPass_Storage*)m_resources[rp.key()]->get();
+		assert(m_resources[get_slot(rp.handle)].has_value());
+		auto res = (RenderPass_Storage*)m_resources[get_slot(rp.handle)]->get();
 		return res->depth_stencil;
 	}
 
 	D3D12_RENDER_PASS_FLAGS RenderDevice_DX12::get_rp_flags(RenderPass rp) const
 	{
-		assert(m_resources[rp.key()].has_value());
-		auto res = (RenderPass_Storage*)m_resources[rp.key()]->get();
+		assert(m_resources[get_slot(rp.handle)].has_value());
+		auto res = (RenderPass_Storage*)m_resources[get_slot(rp.handle)]->get();
 		return res->flags;	
 	}
 
@@ -683,6 +690,7 @@ namespace mira
 	void RenderDevice_DX12::register_swapchain_texture(ComPtr<ID3D12Resource> texture, Texture handle)
 	{
 		auto storage = std::make_shared<Texture_Storage>();
+		storage->resource = texture;
 		auto desc = texture->GetDesc();
 
 		storage->cpu_subresources.push_back({});
@@ -710,7 +718,18 @@ namespace mira
 		m_device->CreateShaderResourceView(storage->resource.Get(), &srvd, srv_desc.cpu_handle(0));
 		storage->subresources.push_back(srv_desc);
 
-		m_resources[handle.key()] = storage;
+		// Insert to storage
+		if (m_resources.size() <= get_slot(handle.handle))
+			m_resources.resize(m_resources.size() * 4);
+		assert(!m_resources[get_slot(handle.handle)].has_value());
+		m_resources[get_slot(handle.handle)] = storage;
+	}
+
+	void RenderDevice_DX12::set_clear_color(Texture tex, const std::array<float, 4>& clear_color)
+	{
+		assert(m_resources[get_slot(tex.handle)].has_value());
+		auto res = (Texture_Storage*)m_resources[get_slot(tex.handle)]->get();
+		res->desc.clear_color = clear_color;
 	}
 
 	void RenderDevice_DX12::create_queues()

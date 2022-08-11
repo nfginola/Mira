@@ -67,6 +67,8 @@ namespace mira
 		ID3D12Resource* get_api_texture(Texture texture) const;
 		u32 get_api_buffer_size(Buffer buffer) const;
 
+		D3D12_RESOURCE_STATES get_resource_state(ResourceState state) const;
+
 		D3D_PRIMITIVE_TOPOLOGY get_api_topology(Pipeline pipeline) const;
 		ID3D12PipelineState* get_api_pipeline(Pipeline pipeline) const;
 		ID3D12RootSignature* get_api_global_rsig() const;
@@ -80,6 +82,7 @@ namespace mira
 		ID3D12CommandQueue* get_queue(D3D12_COMMAND_LIST_TYPE type);
 
 		void register_swapchain_texture(ComPtr<ID3D12Resource> texture, Texture handle);
+		void set_clear_color(Texture tex, const std::array<float, 4>& clear_color);
 
 			
 	private:
@@ -94,12 +97,15 @@ namespace mira
 		std::unique_ptr<DX12Queue> m_direct_queue, m_copy_queue, m_compute_queue;
 		ComPtr<D3D12MA::Allocator> m_dma;
 
-		std::unique_ptr<SwapChain_DX12> m_swapchain;
+		std::vector<std::optional<std::shared_ptr<void>>> m_resources;
 
 		ComPtr<ID3D12RootSignature> m_common_rsig;
 		std::unique_ptr<DX12DescriptorManager> m_descriptor_mgr;
 
-		std::vector<std::optional<std::shared_ptr<void>>> m_resources;
+		// Important that this is destructed before descriptor managers
+		std::unique_ptr<SwapChain_DX12> m_swapchain;
+
+
 
 		// Reuse existing command allocators
 		std::queue<std::unique_ptr<RenderCommandList_DX12>> m_cmd_list_pool_direct, m_cmd_list_pool_compute, m_cmd_list_pool_copy;

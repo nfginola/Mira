@@ -590,4 +590,53 @@ namespace mira
 		}
 	}
 
+	D3D12_RESOURCE_STATES to_internal(ResourceState state)
+	{
+		switch (state)
+		{
+			case ResourceState::Common:
+				return D3D12_RESOURCE_STATE_COMMON;
+			case ResourceState::VertexAndConstantBuffer:
+				return D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+			case ResourceState::IndexBuffer:
+				return D3D12_RESOURCE_STATE_INDEX_BUFFER;
+			case ResourceState::RenderTarget:
+				return D3D12_RESOURCE_STATE_RENDER_TARGET;
+			case ResourceState::UnorderedAccess:
+				return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+			case ResourceState::DepthWrite:
+				return D3D12_RESOURCE_STATE_DEPTH_WRITE;
+			case ResourceState::DepthRead:
+				return D3D12_RESOURCE_STATE_DEPTH_READ;
+			case ResourceState::NonPixelShader:
+				return D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+			case ResourceState::PixelShader:
+				return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+			case ResourceState::StreamOut:
+				return D3D12_RESOURCE_STATE_STREAM_OUT;
+			case ResourceState::Indirect:
+				return D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
+			case ResourceState::CopyDst:
+				return D3D12_RESOURCE_STATE_COPY_DEST;
+			case ResourceState::CopySrc:
+				return D3D12_RESOURCE_STATE_COPY_SOURCE;
+			case ResourceState::ResolveDst:
+				return D3D12_RESOURCE_STATE_RESOLVE_DEST;
+			case ResourceState::ResolveSrc:
+				return D3D12_RESOURCE_STATE_RESOLVE_SOURCE;
+			case ResourceState::Raytracing_AS:
+				return D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+			case ResourceState::ShadingRateSrc:
+				return D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE;
+			case ResourceState::GenericRead:
+				return D3D12_RESOURCE_STATE_GENERIC_READ;
+			case ResourceState::AllShader:
+				return D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
+			case ResourceState::Present:
+				return D3D12_RESOURCE_STATE_PRESENT;
+			default:
+				return D3D12_RESOURCE_STATE_COMMON;
+		}
+	}
+
 }

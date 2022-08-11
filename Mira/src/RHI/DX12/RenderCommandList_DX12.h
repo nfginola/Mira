@@ -22,6 +22,16 @@ namespace mira
 		void begin_renderpass(RenderPass rp);
 		void end_renderpass();
 
+		void add_uav_barrier(Texture resource);
+		void add_uav_barrier(Buffer resource);
+		void add_aliasing_barrier(Texture before, Texture after);
+		void add_transition_barrier(Buffer resource, ResourceState before, ResourceState after);
+		void add_transition_barrier(Texture resource, u8 subresource, ResourceState before, ResourceState after);
+		void flush_barriers();
+
+		void submit_barriers(u8 num_barriers, ResourceBarrier* barriers);
+
+
 
 		// Implementation interface
 		auto get_allocator_and_list() const { return std::pair{ m_cmd_ator.Get(), m_cmd_list.Get() }; }
@@ -40,7 +50,6 @@ namespace mira
 
 		// State
 		std::optional<RenderPass> m_curr_rp;
-
 	};
 }
 

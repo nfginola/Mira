@@ -69,6 +69,15 @@ namespace mira
 		u32 index = m_sc->GetCurrentBackBufferIndex();
 		return m_buffers[index];
 	}
+	u8 SwapChain_DX12::get_next_draw_surface_idx()
+	{
+		return (u8)m_sc->GetCurrentBackBufferIndex();
+	}
+	void SwapChain_DX12::set_clear_color(const std::array<float, 4>& clear_color)
+	{
+		for (const auto& bb : m_buffers)
+			m_device->set_clear_color(bb, clear_color);
+	}
 	void SwapChain_DX12::present(bool vsync)
 	{
 		u32 flags{ 0 };

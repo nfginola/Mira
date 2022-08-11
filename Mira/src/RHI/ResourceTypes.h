@@ -69,6 +69,30 @@ namespace mira
 		Texture2D_Array,
 	};
 
+	enum class ResourceState
+	{
+		Common,
+		VertexAndConstantBuffer,
+		IndexBuffer,
+		RenderTarget,
+		UnorderedAccess,
+		DepthWrite,
+		DepthRead,
+		NonPixelShader,
+		PixelShader,
+		StreamOut,
+		Indirect,
+		CopyDst,
+		CopySrc,
+		ResolveDst,
+		ResolveSrc,
+		Raytracing_AS,
+		ShadingRateSrc,
+		GenericRead,
+		AllShader,
+		Present
+	};
+
 	struct BufferDesc
 	{
 		u32 size{ 0 };

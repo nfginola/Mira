@@ -14,6 +14,9 @@ namespace mira
 
 		// Public interface
 		Texture get_next_draw_surface();
+		u8 get_next_draw_surface_idx();
+		void set_clear_color(const std::array<float, 4>& clear_color);
+
 		void present(bool vsync);
 
 	private:

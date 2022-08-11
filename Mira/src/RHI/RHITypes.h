@@ -5,6 +5,7 @@
 #include "ResourceTypes.h"
 #include "RenderResourceHandle.h"
 #include "RenderPassTypes.h"
+#include "BarrierTypes.h"
 
 namespace mira
 {

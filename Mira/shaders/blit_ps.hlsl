@@ -14,7 +14,7 @@ SamplerState point_samp : register(s1, space1);
 
 float4 main(VS_OUT input) : SV_TARGET
 {    
-    //return float4(input.uv, 0.f, 1.f);
+    return float4(input.uv, 0.f, 1.f);
     //return float4(push_constant.value.rr, 0.f, 1.f);
     
     Texture2D tex = ResourceDescriptorHeap[push_constant.value];

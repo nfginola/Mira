@@ -14,14 +14,14 @@ public:
 		auto handle = m_hp.allocate_handle();
 
 		T strong_handle{};
-		strong_handle.m_handle = handle;
+		strong_handle.handle = handle;
 		return strong_handle;
 	}
 
 	template <typename T>
 	void free_handle(T&& handle)
 	{
-		m_hp.free_handle(handle.m_handle);
+		m_hp.free_handle(handle.handle);
 	}
 
 private:

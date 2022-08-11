@@ -15,7 +15,8 @@ namespace mira
 		m_cmd_ator(allocator),
 		m_cmd_list(command_list),
 		m_queue_type(queue_type)
-	{}
+	{
+	}
 	
 	void RenderCommandList_DX12::set_pipeline(Pipeline pipe)
 	{
@@ -68,6 +69,16 @@ namespace mira
 		auto ds = m_device->get_rp_depth_stencil(rp);
 		auto flags = m_device->get_rp_flags(rp);
 		m_cmd_list->BeginRenderPass((u32)rts.size(), rts.data(), ds.has_value() ? &(*ds) : nullptr, flags);
+
+		D3D12_RECT rect{};
+		rect.left = 0;
+		rect.right = 1600;
+		rect.top = 0;
+		rect.bottom = 900;
+		m_cmd_list->RSSetScissorRects(1, &rect);
+
+		D3D12_VIEWPORT vp = CD3DX12_VIEWPORT(0.f, 0.f, 1600.f, 900.f, 0.f, D3D12_MAX_DEPTH);
+		m_cmd_list->RSSetViewports(1, &vp);
 	}
 
 	void RenderCommandList_DX12::end_renderpass()
@@ -78,7 +89,75 @@ namespace mira
 		m_cmd_list->EndRenderPass();
 
 		m_curr_rp = {};
-	}	
+	}
+
+	void RenderCommandList_DX12::add_uav_barrier(Texture resource)
+	{
+	}
+
+	void RenderCommandList_DX12::add_uav_barrier(Buffer resource)
+	{
+	}
+
+	void RenderCommandList_DX12::add_aliasing_barrier(Texture before, Texture after)
+	{
+	}
+
+	void RenderCommandList_DX12::add_transition_barrier(Buffer resource, ResourceState before, ResourceState after)
+	{
+		auto barr = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_device->get_api_buffer(resource),
+			m_device->get_resource_state(before), m_device->get_resource_state(after),
+			D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
+		m_cmd_list->ResourceBarrier(1, &barr);
+	}
+
+	void RenderCommandList_DX12::add_transition_barrier(Texture resource, u8 subresource, ResourceState before, ResourceState after)
+	{
+		auto barr = CD3DX12_RESOURCE_BARRIER::Transition(
+			m_device->get_api_texture(resource),
+			m_device->get_resource_state(before), m_device->get_resource_state(after),
+			subresource);
+		m_cmd_list->ResourceBarrier(1, &barr);
+	}
+
+	void RenderCommandList_DX12::flush_barriers()
+	{
+	}
+
+	void RenderCommandList_DX12::submit_barriers(u8 num_barriers, ResourceBarrier* barriers)
+	{
+		std::vector<D3D12_RESOURCE_BARRIER> barrs{};
+		barrs.reserve(num_barriers);
+
+		for (u8 i = 0; i < num_barriers; ++i)
+		{
+			// translate barrier
+			const auto& barr_in = barriers[i].barrier;
+
+			switch (barr_in.type)
+			{
+			case ResourceBarrier::Type::Aliasing:
+			{
+				
+
+				break;
+			}
+			case ResourceBarrier::Type::Transition:
+			{
+				break;
+			}
+			case ResourceBarrier::Type::UnorderedAccess:
+			{
+				break;
+			}
+			default:
+				assert(false);
+			}
+		}
+
+		m_cmd_list->ResourceBarrier(barrs.size(), barrs.data());
+	}
 
 	void RenderCommandList_DX12::open()
 	{
