@@ -35,10 +35,24 @@ namespace mira
 
 		virtual u32 create_subresource(Buffer buffer, ViewType view, u32 offset, u32 size, bool raw = false) = 0;
 
-		virtual u32 get_global_descriptor(Buffer buffer, u32 subresource = 0) = 0;
-		virtual u32 get_global_descriptor(Texture texture, u32 subresource = 0) = 0;
+		virtual u32 get_global_descriptor(Buffer buffer, ViewType view, u32 subresource = 0) = 0;
+		virtual u32 get_global_descriptor(Texture texture, ViewType view, u32 subresource = 0) = 0;
 
 		virtual RenderCommandList* allocate_command_list(QueueType queue = QueueType::Graphics) = 0;
+
+		/*
+			cmd list interface should be replaced --> Application creates their own high level command list
+
+			cmd_list = std::make_shared<RenderCommandList>();		--> Command pattern, records high level commandss
+			...
+			...
+			
+			auto list_hdl = allocate_handle<CompiledCommandList>();
+			auto compiled_list1 = rd->compile_command_list(cmd_list, list_hdl);		--> Translation to API
+
+			rd->submit_command_lists(1, &compiled_list1);
+		
+		*/
 
 		// Submit command lists with the option to consume and generate a sync receipt for incoming and outgoing synchronization
 		virtual std::optional<SyncReceipt> submit_command_lists(

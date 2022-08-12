@@ -6,10 +6,10 @@ namespace mira
 {
 	class RenderDevice_DX12;
 
-	class RenderCommandList_DX12 final : public RenderCommandList
+	class RenderCommandLists_DX12 final : public RenderCommandList
 	{
 	public:
-		RenderCommandList_DX12(
+		RenderCommandLists_DX12(
 			const RenderDevice_DX12* device, 
 			ComPtr<ID3D12CommandAllocator> allocator, 
 			ComPtr<ID3D12GraphicsCommandList4> command_list,

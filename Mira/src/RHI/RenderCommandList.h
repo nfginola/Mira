@@ -3,7 +3,7 @@
 
 namespace mira
 {
-	class RenderCommandList
+	class OldCommandList
 	{
 	public:
 		virtual void set_pipeline(Pipeline pipe) = 0;
@@ -23,7 +23,8 @@ namespace mira
 
 		virtual void submit_barriers(u8 num_barriers, ResourceBarrier* barriers) = 0;
 
-		virtual ~RenderCommandList() {}
+		virtual ~OldCommandList() {}
 
 	};
+
 }

@@ -14,7 +14,7 @@ class DX12Fence;
 
 namespace mira
 {
-	class RenderCommandList_DX12;
+	class OldRenderCommandLists_DX12;
 	class SwapChain_DX12;
 
 	class RenderDevice_DX12 final : public RenderDevice
@@ -40,7 +40,7 @@ namespace mira
 		void free_buffer(Buffer handle);
 		void free_texture(Texture handle);
 		void recycle_sync(SyncReceipt receipt);
-		void recycle_command_list(RenderCommandList* list);
+		void recycle_command_list(OldCommandList* list);
 
 		void upload_to_buffer(Buffer buffer, u32 dst_offset, void* data, u32 size);
 
@@ -48,12 +48,12 @@ namespace mira
 		void wait_for_gpu(SyncReceipt&& receipt);
 
 		// Grab bindless indices to update shader args
-		u32 get_global_descriptor(Buffer buffer, u32 subresource = 0);
-		u32 get_global_descriptor(Texture texture, u32 subresource = 0);
+		u32 get_global_descriptor(Buffer buffer, ViewType view, u32 subresource = 0);
+		u32 get_global_descriptor(Texture texture, ViewType view, u32 subresource = 0);
 
-		RenderCommandList* allocate_command_list(QueueType queue = QueueType::Graphics);
+		OldCommandList* allocate_command_list(QueueType queue = QueueType::Graphics);
 		std::optional<SyncReceipt> submit_command_lists(
-			u32 num_lists, RenderCommandList** lists,
+			u32 num_lists, OldCommandList** lists,
 			QueueType queue = QueueType::Graphics,
 			bool generate_sync = false, std::optional<SyncReceipt> sync_with = std::nullopt);
 
@@ -108,8 +108,8 @@ namespace mira
 
 
 		// Reuse existing command allocators
-		std::queue<std::unique_ptr<RenderCommandList_DX12>> m_cmd_list_pool_direct, m_cmd_list_pool_compute, m_cmd_list_pool_copy;
-		std::unordered_map<RenderCommandList_DX12*, std::unique_ptr<RenderCommandList_DX12>> m_cmd_lists_in_play;
+		std::queue<std::unique_ptr<OldRenderCommandLists_DX12>> m_cmd_list_pool_direct, m_cmd_list_pool_compute, m_cmd_list_pool_copy;
+		std::unordered_map<OldRenderCommandLists_DX12*, std::unique_ptr<OldRenderCommandLists_DX12>> m_cmd_lists_in_play;
 
 		// Reuse existing fences
 		struct SyncPrimitive

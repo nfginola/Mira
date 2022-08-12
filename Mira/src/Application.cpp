@@ -73,7 +73,7 @@ Application::Application()
 		cmd_list->add_transition_barrier(curr_bb, 0, mira::ResourceState::RenderTarget, mira::ResourceState::Present);
 
 		// submit cmd list
-		mira::RenderCommandList* cmdls[] = { cmd_list };
+		mira::OldCommandList* cmdls[] = { cmd_list };
 		rd->submit_command_lists(1, cmdls, mira::QueueType::Graphics);
 
 		// present to swapchain

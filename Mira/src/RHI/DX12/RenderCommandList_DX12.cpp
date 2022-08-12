@@ -6,7 +6,7 @@
 
 namespace mira
 {
-	RenderCommandList_DX12::RenderCommandList_DX12(
+	OldRenderCommandLists_DX12::OldRenderCommandLists_DX12(
 		const RenderDevice_DX12* device, 
 		ComPtr<ID3D12CommandAllocator> allocator, 
 		ComPtr<ID3D12GraphicsCommandList4> command_list,
@@ -18,13 +18,13 @@ namespace mira
 	{
 	}
 	
-	void RenderCommandList_DX12::set_pipeline(Pipeline pipe)
+	void OldRenderCommandLists_DX12::set_pipeline(Pipeline pipe)
 	{
 		m_cmd_list->SetPipelineState(m_device->get_api_pipeline(pipe));
 		m_cmd_list->IASetPrimitiveTopology(m_device->get_api_topology(pipe));
 	}
 
-	void RenderCommandList_DX12::set_index_buffer(Buffer buffer)
+	void OldRenderCommandLists_DX12::set_index_buffer(Buffer buffer)
 	{
 		auto res = m_device->get_api_buffer(buffer);
 		D3D12_INDEX_BUFFER_VIEW ibv{};
@@ -34,12 +34,12 @@ namespace mira
 		m_cmd_list->IASetIndexBuffer(&ibv);
 	}
 	
-	void RenderCommandList_DX12::draw(u32 verts_per_instance, u32 instance_count, u32 vert_start, u32 instance_start)
+	void OldRenderCommandLists_DX12::draw(u32 verts_per_instance, u32 instance_count, u32 vert_start, u32 instance_start)
 	{
 		m_cmd_list->DrawInstanced(verts_per_instance, instance_count, vert_start, instance_start);
 	}
 
-	void RenderCommandList_DX12::update_shader_args(u8 num_descriptors, u32* descriptors, QueueType queue)
+	void OldRenderCommandLists_DX12::update_shader_args(u8 num_descriptors, u32* descriptors, QueueType queue)
 	{
 		assert(queue != QueueType::Copy);
 
@@ -59,7 +59,7 @@ namespace mira
 		}
 	}
 
-	void RenderCommandList_DX12::begin_renderpass(RenderPass rp)
+	void OldRenderCommandLists_DX12::begin_renderpass(RenderPass rp)
 	{
 		assert(!m_curr_rp.has_value());
 		m_curr_rp = rp;
@@ -81,7 +81,7 @@ namespace mira
 		m_cmd_list->RSSetViewports(1, &vp);
 	}
 
-	void RenderCommandList_DX12::end_renderpass()
+	void OldRenderCommandLists_DX12::end_renderpass()
 	{
 		assert(m_curr_rp.has_value());
 
@@ -91,19 +91,19 @@ namespace mira
 		m_curr_rp = {};
 	}
 
-	void RenderCommandList_DX12::add_uav_barrier(Texture resource)
+	void OldRenderCommandLists_DX12::add_uav_barrier(Texture resource)
 	{
 	}
 
-	void RenderCommandList_DX12::add_uav_barrier(Buffer resource)
+	void OldRenderCommandLists_DX12::add_uav_barrier(Buffer resource)
 	{
 	}
 
-	void RenderCommandList_DX12::add_aliasing_barrier(Texture before, Texture after)
+	void OldRenderCommandLists_DX12::add_aliasing_barrier(Texture before, Texture after)
 	{
 	}
 
-	void RenderCommandList_DX12::add_transition_barrier(Buffer resource, ResourceState before, ResourceState after)
+	void OldRenderCommandLists_DX12::add_transition_barrier(Buffer resource, ResourceState before, ResourceState after)
 	{
 		auto barr = CD3DX12_RESOURCE_BARRIER::Transition(
 			m_device->get_api_buffer(resource),
@@ -112,7 +112,7 @@ namespace mira
 		m_cmd_list->ResourceBarrier(1, &barr);
 	}
 
-	void RenderCommandList_DX12::add_transition_barrier(Texture resource, u8 subresource, ResourceState before, ResourceState after)
+	void OldRenderCommandLists_DX12::add_transition_barrier(Texture resource, u8 subresource, ResourceState before, ResourceState after)
 	{
 		auto barr = CD3DX12_RESOURCE_BARRIER::Transition(
 			m_device->get_api_texture(resource),
@@ -121,11 +121,11 @@ namespace mira
 		m_cmd_list->ResourceBarrier(1, &barr);
 	}
 
-	void RenderCommandList_DX12::flush_barriers()
+	void OldRenderCommandLists_DX12::flush_barriers()
 	{
 	}
 
-	void RenderCommandList_DX12::submit_barriers(u8 num_barriers, ResourceBarrier* barriers)
+	void OldRenderCommandLists_DX12::submit_barriers(u8 num_barriers, ResourceBarrier* barriers)
 	{
 		std::vector<D3D12_RESOURCE_BARRIER> barrs{};
 		barrs.reserve(num_barriers);
@@ -156,10 +156,10 @@ namespace mira
 			}
 		}
 
-		m_cmd_list->ResourceBarrier(barrs.size(), barrs.data());
+		m_cmd_list->ResourceBarrier((u32)barrs.size(), barrs.data());
 	}
 
-	void RenderCommandList_DX12::open()
+	void OldRenderCommandLists_DX12::open()
 	{
 		m_cmd_ator->Reset();
 		m_cmd_list->Reset(m_cmd_ator.Get(), nullptr);
@@ -174,7 +174,7 @@ namespace mira
 		m_cmd_list->SetDescriptorHeaps(2, dheaps);
 	}
 
-	void RenderCommandList_DX12::close()
+	void OldRenderCommandLists_DX12::close()
 	{
 		m_cmd_list->Close();
 	}
