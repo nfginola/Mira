@@ -31,7 +31,7 @@ Application::Application()
 	mira::Texture bb_textures[]{ rhp.allocate_handle<mira::Texture>(), rhp.allocate_handle<mira::Texture>() };
 	mira::SwapChain* sc = rd->create_swapchain(m_window->get_hwnd(), bb_textures);
 
-	// Create fullscreen plit pipeline
+	// Create fullscreen blit pipeline
 	auto blit_pipe = rhp.allocate_handle<mira::Pipeline>();
 	{
 		auto vs = sclr->compile_from_file("fullscreen_tri_vs.hlsl", mira::ShaderType::Vertex);

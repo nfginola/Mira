@@ -53,10 +53,6 @@ namespace mira
 		u32 get_global_descriptor(Texture texture, ViewType view, u32 subresource = 0);
 
 		RenderCommandList* allocate_command_list(QueueType queue = QueueType::Graphics);
-		std::optional<SyncReceipt> submit_command_lists(
-			u32 num_lists, RenderCommandList** lists,
-			QueueType queue = QueueType::Graphics,
-			bool generate_sync = false, std::optional<SyncReceipt> sync_with = std::nullopt);
 
 		std::optional<SyncReceipt> submit_command_lists(
 			std::span<RenderCommandList*> lists,

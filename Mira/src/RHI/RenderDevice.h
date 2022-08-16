@@ -40,28 +40,7 @@ namespace mira
 
 		virtual RenderCommandList* allocate_command_list(QueueType queue = QueueType::Graphics) = 0;
 
-		/*
-			cmd list interface should be replaced --> Application creates their own high level command list
-
-			cmd_list = std::make_shared<RenderCommandList>();		--> Command pattern, records high level commandss
-			...
-			...
-			
-			auto list_hdl = allocate_handle<CompiledCommandList>();
-			auto compiled_list1 = rd->compile_command_list(cmd_list, list_hdl);		--> Translation to API
-
-			rd->submit_command_lists(1, &compiled_list1);
-		
-		*/
-
 		// Submit command lists with the option to consume and generate a sync receipt for incoming and outgoing synchronization
-		virtual std::optional<SyncReceipt> submit_command_lists(
-			u32 num_lists, RenderCommandList** lists,
-			QueueType queue = QueueType::Graphics,
-			bool generate_sync = false, std::optional<SyncReceipt> sync_with = std::nullopt
-		) = 0;
-
-
 		virtual std::optional<SyncReceipt> submit_command_lists(
 			std::span<RenderCommandList*> lists,
 			QueueType queue = QueueType::Graphics,
