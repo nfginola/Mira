@@ -6,10 +6,10 @@ namespace mira
 {
 	class RenderDevice_DX12;
 
-	class RenderCommandLists_DX12 final : public RenderCommandList
+	class RenderCommandList_DX12 final : public RenderCommandList
 	{
 	public:
-		RenderCommandLists_DX12(
+		RenderCommandList_DX12(
 			const RenderDevice_DX12* device, 
 			ComPtr<ID3D12CommandAllocator> allocator, 
 			ComPtr<ID3D12GraphicsCommandList4> command_list,
@@ -22,14 +22,7 @@ namespace mira
 		void begin_renderpass(RenderPass rp);
 		void end_renderpass();
 
-		void add_uav_barrier(Texture resource);
-		void add_uav_barrier(Buffer resource);
-		void add_aliasing_barrier(Texture before, Texture after);
-		void add_transition_barrier(Buffer resource, ResourceState before, ResourceState after);
-		void add_transition_barrier(Texture resource, u8 subresource, ResourceState before, ResourceState after);
-		void flush_barriers();
-
-		void submit_barriers(u8 num_barriers, ResourceBarrier* barriers);
+		void submit_barriers(std::span<ResourceBarrier> barriers);
 
 
 
@@ -50,6 +43,9 @@ namespace mira
 
 		// State
 		std::optional<RenderPass> m_curr_rp;
+
+		// Persistent storage
+		std::vector<std::vector<D3D12_RESOURCE_BARRIER>> m_barriers_per_submission;
 	};
 }
 

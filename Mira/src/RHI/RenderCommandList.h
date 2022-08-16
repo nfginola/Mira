@@ -1,9 +1,10 @@
 #pragma once
 #include "RHITypes.h"
+#include <span>
 
 namespace mira
 {
-	class OldCommandList
+	class RenderCommandList
 	{
 	public:
 		virtual void set_pipeline(Pipeline pipe) = 0;
@@ -14,16 +15,9 @@ namespace mira
 		virtual void begin_renderpass(RenderPass rp) = 0;
 		virtual void end_renderpass() = 0;
 
-		virtual void add_uav_barrier(Texture resource) = 0;
-		virtual void add_uav_barrier(Buffer resource) = 0;
-		virtual void add_aliasing_barrier(Texture before, Texture after) = 0;
-		virtual void add_transition_barrier(Buffer resource, ResourceState before, ResourceState after) = 0;
-		virtual void add_transition_barrier(Texture resource, u8 subresource, ResourceState before, ResourceState after) = 0;
-		virtual void flush_barriers() = 0;
+		virtual void submit_barriers(std::span<ResourceBarrier> barriers) = 0;
 
-		virtual void submit_barriers(u8 num_barriers, ResourceBarrier* barriers) = 0;
-
-		virtual ~OldCommandList() {}
+		virtual ~RenderCommandList() {}
 
 	};
 

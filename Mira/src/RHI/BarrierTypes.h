@@ -11,58 +11,67 @@ namespace mira
 			Transition,
 			Aliasing,
 			UnorderedAccess,
-			None,
 		};
 
 		enum class ResourceType
 		{
 			Buffer,
 			Texture,
-			None
 		};
 
-		ResourceBarrier& uav_barrier(Texture resource) { barrier.resource_or_before = resource.handle; barrier.type = Type::UnorderedAccess; barrier.res_type = ResourceType::Texture; return *this; }
-		ResourceBarrier& uav_barrier(Buffer resource) { barrier.resource_or_before = resource.handle; barrier.type = Type::UnorderedAccess; barrier.res_type = ResourceType::Buffer; return *this; }
+		static ResourceBarrier uav_barrier(Texture resource) 
+		{ 
+			ResourceBarrier barr{};
+			barr.info.resource_or_before = resource.handle;
+			barr.info.type = Type::UnorderedAccess;
+			barr.info.res_type = ResourceType::Texture;
+			return barr;
+		}
+		
+		static ResourceBarrier uav_barrier(Buffer resource)
+		{ 
+			ResourceBarrier barr{};
+			barr.info.resource_or_before = resource.handle;
+			barr.info.type = Type::UnorderedAccess;
+			barr.info.res_type = ResourceType::Buffer;
+			return barr;
+		}
 
-		ResourceBarrier& aliasing(Texture before, Texture after) 
+		static ResourceBarrier transition(Buffer resource, ResourceState before, ResourceState after)
 		{ 
-			barrier.resource_or_before = before.handle; 
-			barrier.after = after.handle;
-			barrier.type = Type::Aliasing; 
-			barrier.res_type = ResourceType::Texture;
-			return *this;  
+			ResourceBarrier barr{};
+			barr.info.resource_or_before = resource.handle;
+			barr.info.state_before = before;
+			barr.info.state_after = after;
+			barr.info.type = Type::Transition;
+			barr.info.subresource = 0xffffffff;
+			barr.info.res_type = ResourceType::Buffer;
+			return barr; 
 		}
-		ResourceBarrier& transition(Buffer resource, ResourceState before, ResourceState after) 
-		{ 
-			barrier.resource_or_before = resource.handle; 
-			barrier.state_before = before; 
-			barrier.state_after = after; 
-			barrier.type = Type::Transition; 
-			barrier.subresource = 0xffffffff;
-			barrier.res_type = ResourceType::Buffer; 
-			return *this; 
-		}
-		ResourceBarrier& transition(Texture resource, ResourceState before, ResourceState after, u32 subresource)
+
+		static ResourceBarrier transition(Texture resource, ResourceState before, ResourceState after, u32 api_subresource)
 		{
-			barrier.resource_or_before = resource.handle;
-			barrier.state_before = before;
-			barrier.state_after = after;
-			barrier.type = Type::Transition;
-			barrier.subresource = subresource;
-			barrier.res_type = ResourceType::Texture;
-			return *this;
+			ResourceBarrier barr{};
+			barr.info.resource_or_before = resource.handle;
+			barr.info.state_before = before;
+			barr.info.state_after = after;
+			barr.info.type = Type::Transition;
+			barr.info.subresource = api_subresource;
+			barr.info.res_type = ResourceType::Texture;
+			return barr;
 		}
 
 		struct BarrierInfo
 		{
-			Type type{ Type::None };					
-			ResourceType res_type{ ResourceType::None };	
+			Type type{ Type::Transition };					
+			ResourceType res_type{ ResourceType::Buffer };	
 	
 			u64 resource_or_before;
 			u64 after;
 			ResourceState state_before, state_after;
 			u32 subresource{ 0 };
-		} barrier;
+		} info;
 	};
+
 
 }

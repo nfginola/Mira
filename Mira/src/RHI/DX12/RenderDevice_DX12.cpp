@@ -470,12 +470,12 @@ namespace mira
 		}
 	}
 
-	OldCommandList* RenderDevice_DX12::allocate_command_list(QueueType queue)
+	RenderCommandList* RenderDevice_DX12::allocate_command_list(QueueType queue)
 	{
 		HRESULT hr{ S_OK };
 
 		D3D12_COMMAND_LIST_TYPE type{ D3D12_COMMAND_LIST_TYPE_DIRECT };
-		std::queue<std::unique_ptr<OldRenderCommandLists_DX12>>* cmd_list_pool{ nullptr };
+		std::queue<std::unique_ptr<RenderCommandList_DX12>>* cmd_list_pool{ nullptr };
 		switch (queue)
 		{
 		case QueueType::Graphics:
@@ -494,7 +494,7 @@ namespace mira
 			cmd_list_pool = &m_cmd_list_pool_direct;
 		}
 		
-		std::unique_ptr<OldRenderCommandLists_DX12> render_cmd_list;
+		std::unique_ptr<RenderCommandList_DX12> render_cmd_list;
 		if (!cmd_list_pool->empty())
 		{
 			render_cmd_list = std::move(cmd_list_pool->front());
@@ -509,7 +509,7 @@ namespace mira
 			hr = m_device->CreateCommandList1(0, type, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(cmdl.GetAddressOf()));
 			HR_VFY(hr);
 			
-			render_cmd_list = std::make_unique<OldRenderCommandLists_DX12>(this, ator, cmdl, queue);
+			render_cmd_list = std::make_unique<RenderCommandList_DX12>(this, ator, cmdl, queue);
 		}
 		auto ret = render_cmd_list.get();
 
@@ -521,12 +521,12 @@ namespace mira
 		return ret;
 	}
 
-	std::optional<SyncReceipt> RenderDevice_DX12::submit_command_lists(u32 num_lists, OldCommandList** lists, QueueType queue, bool generate_sync, std::optional<SyncReceipt> sync_with)
+	std::optional<SyncReceipt> RenderDevice_DX12::submit_command_lists(u32 num_lists, RenderCommandList** lists, QueueType queue, bool generate_sync, std::optional<SyncReceipt> sync_with)
 	{
 		ID3D12CommandList* cmdls[16];
 		for (u32 i = 0; i < num_lists; ++i)
 		{
-			auto list = (OldRenderCommandLists_DX12*)lists[i];
+			auto list = (RenderCommandList_DX12*)lists[i];
 			list->close();
 
 			auto [_, cmd_list] = list->get_allocator_and_list();
@@ -612,9 +612,9 @@ namespace mira
 
 	}
 
-	void RenderDevice_DX12::recycle_command_list(OldCommandList* list)
+	void RenderDevice_DX12::recycle_command_list(RenderCommandList* list)
 	{
-		auto api_list = std::move(m_cmd_lists_in_play[(OldRenderCommandLists_DX12*)list]);
+		auto api_list = std::move(m_cmd_lists_in_play[(RenderCommandList_DX12*)list]);
 
 		switch (api_list->queue_type())
 		{

@@ -6,7 +6,7 @@
 
 namespace mira
 {
-	OldRenderCommandLists_DX12::OldRenderCommandLists_DX12(
+	RenderCommandList_DX12::RenderCommandList_DX12(
 		const RenderDevice_DX12* device, 
 		ComPtr<ID3D12CommandAllocator> allocator, 
 		ComPtr<ID3D12GraphicsCommandList4> command_list,
@@ -18,13 +18,13 @@ namespace mira
 	{
 	}
 	
-	void OldRenderCommandLists_DX12::set_pipeline(Pipeline pipe)
+	void RenderCommandList_DX12::set_pipeline(Pipeline pipe)
 	{
 		m_cmd_list->SetPipelineState(m_device->get_api_pipeline(pipe));
 		m_cmd_list->IASetPrimitiveTopology(m_device->get_api_topology(pipe));
 	}
 
-	void OldRenderCommandLists_DX12::set_index_buffer(Buffer buffer)
+	void RenderCommandList_DX12::set_index_buffer(Buffer buffer)
 	{
 		auto res = m_device->get_api_buffer(buffer);
 		D3D12_INDEX_BUFFER_VIEW ibv{};
@@ -34,12 +34,12 @@ namespace mira
 		m_cmd_list->IASetIndexBuffer(&ibv);
 	}
 	
-	void OldRenderCommandLists_DX12::draw(u32 verts_per_instance, u32 instance_count, u32 vert_start, u32 instance_start)
+	void RenderCommandList_DX12::draw(u32 verts_per_instance, u32 instance_count, u32 vert_start, u32 instance_start)
 	{
 		m_cmd_list->DrawInstanced(verts_per_instance, instance_count, vert_start, instance_start);
 	}
 
-	void OldRenderCommandLists_DX12::update_shader_args(u8 num_descriptors, u32* descriptors, QueueType queue)
+	void RenderCommandList_DX12::update_shader_args(u8 num_descriptors, u32* descriptors, QueueType queue)
 	{
 		assert(queue != QueueType::Copy);
 
@@ -59,7 +59,7 @@ namespace mira
 		}
 	}
 
-	void OldRenderCommandLists_DX12::begin_renderpass(RenderPass rp)
+	void RenderCommandList_DX12::begin_renderpass(RenderPass rp)
 	{
 		assert(!m_curr_rp.has_value());
 		m_curr_rp = rp;
@@ -81,7 +81,7 @@ namespace mira
 		m_cmd_list->RSSetViewports(1, &vp);
 	}
 
-	void OldRenderCommandLists_DX12::end_renderpass()
+	void RenderCommandList_DX12::end_renderpass()
 	{
 		assert(m_curr_rp.has_value());
 
@@ -91,64 +91,42 @@ namespace mira
 		m_curr_rp = {};
 	}
 
-	void OldRenderCommandLists_DX12::add_uav_barrier(Texture resource)
-	{
-	}
-
-	void OldRenderCommandLists_DX12::add_uav_barrier(Buffer resource)
-	{
-	}
-
-	void OldRenderCommandLists_DX12::add_aliasing_barrier(Texture before, Texture after)
-	{
-	}
-
-	void OldRenderCommandLists_DX12::add_transition_barrier(Buffer resource, ResourceState before, ResourceState after)
-	{
-		auto barr = CD3DX12_RESOURCE_BARRIER::Transition(
-			m_device->get_api_buffer(resource),
-			m_device->get_resource_state(before), m_device->get_resource_state(after),
-			D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
-		m_cmd_list->ResourceBarrier(1, &barr);
-	}
-
-	void OldRenderCommandLists_DX12::add_transition_barrier(Texture resource, u8 subresource, ResourceState before, ResourceState after)
-	{
-		auto barr = CD3DX12_RESOURCE_BARRIER::Transition(
-			m_device->get_api_texture(resource),
-			m_device->get_resource_state(before), m_device->get_resource_state(after),
-			subresource);
-		m_cmd_list->ResourceBarrier(1, &barr);
-	}
-
-	void OldRenderCommandLists_DX12::flush_barriers()
-	{
-	}
-
-	void OldRenderCommandLists_DX12::submit_barriers(u8 num_barriers, ResourceBarrier* barriers)
+	void RenderCommandList_DX12::submit_barriers(std::span<ResourceBarrier> barriers)
 	{
 		std::vector<D3D12_RESOURCE_BARRIER> barrs{};
-		barrs.reserve(num_barriers);
+		barrs.reserve(barriers.size());
 
-		for (u8 i = 0; i < num_barriers; ++i)
+		for (const auto& barr : barriers)
 		{
-			// translate barrier
-			const auto& barr_in = barriers[i].barrier;
-
-			switch (barr_in.type)
+			switch (barr.info.type)
 			{
 			case ResourceBarrier::Type::Aliasing:
 			{
-				
-
+				assert(false);
 				break;
 			}
 			case ResourceBarrier::Type::Transition:
 			{
+				if (barr.info.res_type == ResourceBarrier::ResourceType::Buffer)
+				{
+					barrs.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
+						m_device->get_api_buffer(Buffer{ barr.info.resource_or_before }),
+						m_device->get_resource_state(barr.info.state_before), m_device->get_resource_state(barr.info.state_after),
+						barr.info.subresource));
+				}
+				else
+				{
+					barrs.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
+						m_device->get_api_texture(Texture{ barr.info.resource_or_before }),
+						m_device->get_resource_state(barr.info.state_before), m_device->get_resource_state(barr.info.state_after),
+						barr.info.subresource));
+				}
+
 				break;
 			}
 			case ResourceBarrier::Type::UnorderedAccess:
 			{
+				assert(false);
 				break;
 			}
 			default:
@@ -156,10 +134,11 @@ namespace mira
 			}
 		}
 
-		m_cmd_list->ResourceBarrier((u32)barrs.size(), barrs.data());
+		m_barriers_per_submission.push_back(std::move(barrs));
+		m_cmd_list->ResourceBarrier((u32)m_barriers_per_submission.back().size(), m_barriers_per_submission.back().data());
 	}
 
-	void OldRenderCommandLists_DX12::open()
+	void RenderCommandList_DX12::open()
 	{
 		m_cmd_ator->Reset();
 		m_cmd_list->Reset(m_cmd_ator.Get(), nullptr);
@@ -174,9 +153,10 @@ namespace mira
 		m_cmd_list->SetDescriptorHeaps(2, dheaps);
 	}
 
-	void OldRenderCommandLists_DX12::close()
+	void RenderCommandList_DX12::close()
 	{
 		m_cmd_list->Close();
+		m_barriers_per_submission.clear();
 	}
 }
 

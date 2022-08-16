@@ -496,19 +496,16 @@ namespace mira
 	{
 		switch (type)
 		{
-			switch (type)
-			{
-			case TextureType::Texture1D:
-				return D3D12_DSV_DIMENSION_TEXTURE1D;
-			case TextureType::Texture1D_Array:
-				return D3D12_DSV_DIMENSION_TEXTURE1DARRAY;
-			case TextureType::Texture2D:
-				return D3D12_DSV_DIMENSION_TEXTURE2D;
-			case TextureType::Texture2D_Array:
-				return D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
-			default:
-				return D3D12_DSV_DIMENSION_UNKNOWN;
-			}
+		case TextureType::Texture1D:
+			return D3D12_DSV_DIMENSION_TEXTURE1D;
+		case TextureType::Texture1D_Array:
+			return D3D12_DSV_DIMENSION_TEXTURE1DARRAY;
+		case TextureType::Texture2D:
+			return D3D12_DSV_DIMENSION_TEXTURE2D;
+		case TextureType::Texture2D_Array:
+			return D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+		default:
+			return D3D12_DSV_DIMENSION_UNKNOWN;
 		}
 	}
 

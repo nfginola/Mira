@@ -63,17 +63,26 @@ Application::Application()
 
 		auto cmd_list = rd->allocate_command_list();
 
-		cmd_list->add_transition_barrier(curr_bb, 0, mira::ResourceState::Present, mira::ResourceState::RenderTarget);
+		mira::ResourceBarrier barrs_before[]
+		{ 
+			mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::Present, mira::ResourceState::RenderTarget, 0) 
+		};
+		cmd_list->submit_barriers(barrs_before);
 
 		cmd_list->set_pipeline(blit_pipe);
 		cmd_list->begin_renderpass(curr_bb_rp);
 		cmd_list->draw(3, 1, 0, 0);
 		cmd_list->end_renderpass();
 
-		cmd_list->add_transition_barrier(curr_bb, 0, mira::ResourceState::RenderTarget, mira::ResourceState::Present);
+		mira::ResourceBarrier barrs_after[]
+		{
+			mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::RenderTarget, mira::ResourceState::Present, 0)
+		};
+		cmd_list->submit_barriers(barrs_after);
+
 
 		// submit cmd list
-		mira::OldCommandList* cmdls[] = { cmd_list };
+		mira::RenderCommandList* cmdls[] = { cmd_list };
 		rd->submit_command_lists(1, cmdls, mira::QueueType::Graphics);
 
 		// present to swapchain
