@@ -25,7 +25,8 @@ namespace mira
 
 		// Pass buffer handles to attach swapchain buffers to.
 		// Number of passed handles is the number of buffers used for the swapchain!
-		SwapChain* create_swapchain(void* hwnd, const std::vector<Texture>& swapchain_buffer_handles);
+		SwapChain* create_swapchain(void* hwnd, std::span<Texture> swapchain_buffer_handles);
+
 
 		// Resource creation/destruction
 		void create_buffer(const BufferDesc& desc, Buffer handle);
@@ -57,7 +58,10 @@ namespace mira
 			QueueType queue = QueueType::Graphics,
 			bool generate_sync = false, std::optional<SyncReceipt> sync_with = std::nullopt);
 
-
+		std::optional<SyncReceipt> submit_command_lists(
+			std::span<RenderCommandList*> lists,
+			QueueType queue = QueueType::Graphics,
+			bool generate_sync = false, std::optional<SyncReceipt> sync_with = std::nullopt);
 
 
 

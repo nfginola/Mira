@@ -10,7 +10,7 @@ namespace mira
 	class RenderDevice
 	{
 	public:
-		virtual SwapChain* create_swapchain(void* hwnd, const std::vector<Texture>& swapchain_buffer_handles) = 0;
+		virtual SwapChain* create_swapchain(void* hwnd, std::span<Texture> swapchain_buffer_handles) = 0;
 
 		virtual void create_buffer(const BufferDesc& desc, Buffer handle) = 0;
 		virtual void create_texture(const TextureDesc& desc, Texture handle) = 0;
@@ -57,6 +57,13 @@ namespace mira
 		// Submit command lists with the option to consume and generate a sync receipt for incoming and outgoing synchronization
 		virtual std::optional<SyncReceipt> submit_command_lists(
 			u32 num_lists, RenderCommandList** lists,
+			QueueType queue = QueueType::Graphics,
+			bool generate_sync = false, std::optional<SyncReceipt> sync_with = std::nullopt
+		) = 0;
+
+
+		virtual std::optional<SyncReceipt> submit_command_lists(
+			std::span<RenderCommandList*> lists,
 			QueueType queue = QueueType::Graphics,
 			bool generate_sync = false, std::optional<SyncReceipt> sync_with = std::nullopt
 		) = 0;

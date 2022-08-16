@@ -10,6 +10,7 @@
 
 Application::Application()
 {
+
 	const UINT c_width = 1600;
 	const UINT c_height = 900;
 
@@ -20,17 +21,17 @@ Application::Application()
 	m_window = std::make_unique<Window>(GetModuleHandle(NULL), win_proc_callback, c_width, c_height);
 
 
-	TypedHandlePool rhp;
-
 	auto be_dx = std::make_unique<mira::RenderBackend_DX12>(true);
 	mira::RenderDevice* rd = be_dx->create_device();
 	auto sclr = std::make_unique<mira::ShaderCompiler_DXC>();
 
-	auto bb1 = rhp.allocate_handle<mira::Texture>();
-	auto bb2 = rhp.allocate_handle<mira::Texture>();
-	mira::SwapChain* sc = rd->create_swapchain(m_window->get_hwnd(), {bb1, bb2});
+	TypedHandlePool rhp;	// Render handle pool
 
+	// Create swapchain (requires at least 2 buffers)
+	mira::Texture bb_textures[]{ rhp.allocate_handle<mira::Texture>(), rhp.allocate_handle<mira::Texture>() };
+	mira::SwapChain* sc = rd->create_swapchain(m_window->get_hwnd(), bb_textures);
 
+	// Create fullscreen plit pipeline
 	auto blit_pipe = rhp.allocate_handle<mira::Pipeline>();
 	{
 		auto vs = sclr->compile_from_file("fullscreen_tri_vs.hlsl", mira::ShaderType::Vertex);
@@ -44,15 +45,15 @@ Application::Application()
 			blit_pipe);
 	}
 
+	// Create renderpasses for swapchain
 	mira::RenderPass bb_rps[2] = { rhp.allocate_handle<mira::RenderPass>(), rhp.allocate_handle<mira::RenderPass>() };
-	rd->create_renderpass(mira::RenderPassBuilder()
-		.append_rt(bb1, 0, mira::RenderPassBeginAccessType::Clear, mira::RenderPassEndingAccessType::Preserve)
-		.build(), 
-		bb_rps[0]);
-	rd->create_renderpass(mira::RenderPassBuilder()
-		.append_rt(bb2, 0, mira::RenderPassBeginAccessType::Clear, mira::RenderPassEndingAccessType::Preserve)
-		.build(),
-		bb_rps[1]);
+	for (u32 i = 0; i < _countof(bb_rps); ++i)
+	{
+		rd->create_renderpass(mira::RenderPassBuilder()
+			.append_rt(bb_textures[i], 0, mira::RenderPassBeginAccessType::Clear, mira::RenderPassEndingAccessType::Preserve)
+			.build(),
+			bb_rps[i]);
+	}
 
 	while (m_window->is_alive())
 	{
@@ -80,10 +81,9 @@ Application::Application()
 		};
 		cmd_list->submit_barriers(barrs_after);
 
-
 		// submit cmd list
 		mira::RenderCommandList* cmdls[] = { cmd_list };
-		rd->submit_command_lists(1, cmdls, mira::QueueType::Graphics);
+		rd->submit_command_lists(cmdls, mira::QueueType::Graphics);
 
 		// present to swapchain
 		sc->present(false);

@@ -82,7 +82,7 @@ namespace mira
 
 	}
 
-	SwapChain* RenderDevice_DX12::create_swapchain(void* hwnd, const std::vector<Texture>& swapchain_buffer_handles)
+	SwapChain* RenderDevice_DX12::create_swapchain(void* hwnd, std::span<Texture> swapchain_buffer_handles)
 	{
 		m_swapchain = std::make_unique<SwapChain_DX12>(this, (HWND)hwnd, swapchain_buffer_handles, m_debug_on);
 		return m_swapchain.get();
@@ -561,6 +561,87 @@ namespace mira
 		}
 
 		curr_queue->execute_command_lists(num_lists, cmdls);
+
+		std::optional<SyncReceipt> sync_receipt{ std::nullopt };
+		if (generate_sync)
+		{
+			SyncPrimitive sync_prim{};
+			SyncReceipt receipt{};
+
+			// reuse sync prims if any
+			if (!m_sync_pool.empty())
+			{
+				sync_prim = std::move(m_sync_pool.front());
+				m_sync_pool.pop();
+			}
+			else
+			{
+				// create new fence for use
+				sync_prim.fence = std::make_unique<DX12Fence>(m_device.Get(), 0);
+			}
+
+			curr_queue->insert_signal(*sync_prim.fence);
+
+			// reuse slot if any
+			if (!m_reusable_sync_slots.empty())
+			{
+				u32 slot = m_reusable_sync_slots.front();
+				m_reusable_sync_slots.pop();
+				m_syncs_in_play[slot] = std::move(sync_prim);
+				receipt.handle = slot;
+			}
+			else
+			{
+				m_syncs_in_play.push_back(std::move(sync_prim));
+				receipt.handle = (u32)(m_syncs_in_play.size() - 1);
+			}
+			sync_receipt = receipt;
+
+		}
+
+		return sync_receipt;
+	}
+
+	std::optional<SyncReceipt> RenderDevice_DX12::submit_command_lists(std::span<RenderCommandList*> lists, QueueType queue, bool generate_sync, std::optional<SyncReceipt> sync_with)
+	{
+		ID3D12CommandList* cmdls[16];
+		for (u32 i = 0; i < lists.size(); ++i)
+		{
+			auto list = (RenderCommandList_DX12*)lists[i];
+			list->close();
+
+			auto [_, cmd_list] = list->get_allocator_and_list();
+			cmdls[i] = cmd_list;
+		}
+
+		DX12Queue* curr_queue{ nullptr };
+		switch (queue)
+		{
+		case QueueType::Graphics:
+			curr_queue = m_direct_queue.get();
+			break;
+		case QueueType::Compute:
+			curr_queue = m_compute_queue.get();
+			break;
+		case QueueType::Copy:
+			curr_queue = m_copy_queue.get();
+			break;
+		default:
+			curr_queue = m_direct_queue.get();
+		}
+
+		// Use sync receipt to check up sync handle and synchronize accordingly (Fence Wait) before executing command list
+		if (sync_with.has_value())
+		{
+			assert(m_syncs_in_play[sync_with->handle].has_value());
+			auto sync_prim = std::move(*m_syncs_in_play[sync_with->handle]);
+			m_syncs_in_play[sync_with->handle] = std::nullopt;
+
+			// Insert wait
+			sync_prim.fence->gpu_wait(*curr_queue);
+		}
+
+		curr_queue->execute_command_lists((u32)lists.size(), cmdls);
 
 		std::optional<SyncReceipt> sync_receipt{ std::nullopt };
 		if (generate_sync)

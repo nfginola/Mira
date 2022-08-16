@@ -2,7 +2,7 @@
 
 namespace mira
 {
-	SwapChain_DX12::SwapChain_DX12(RenderDevice_DX12* device, HWND hwnd, const std::vector<Texture>& handles_to_attach_to, bool debug_on) :
+	SwapChain_DX12::SwapChain_DX12(RenderDevice_DX12* device, HWND hwnd, std::span<Texture> handles_to_attach_to, bool debug_on) :
 		m_device(device)
 	{
 		assert(handles_to_attach_to.size() >= 2);
@@ -12,7 +12,7 @@ namespace mira
 		// Swapchain may force a flush on the associated queue (requires direct queue, to be specific)
 		// https://github.com/microsoft/DirectX-Graphics-Samples/blob/master/Samples/Desktop/D3D12HelloWorld/src/HelloTriangle/D3D12HelloTriangle.cpp#L95
 		// https://docs.microsoft.com/en-us/windows/win32/api/dxgi1_2/nf-dxgi1_2-idxgifactory2-createswapchainforhwnd
-		
+
 		DXGI_SWAP_CHAIN_DESC1 scd{};
 		scd.Width = 0;
 		scd.Height = 0;
@@ -59,6 +59,7 @@ namespace mira
 			m_buffers.push_back(handles_to_attach_to[i]);
 		}
 	}
+	
 	SwapChain_DX12::~SwapChain_DX12()
 	{
 		for (auto bb : m_buffers)

@@ -9,7 +9,7 @@ namespace mira
 	class SwapChain_DX12 : public SwapChain
 	{
 	public:
-		SwapChain_DX12(RenderDevice_DX12* device, HWND hwnd, const std::vector<Texture>& handles_to_attach_to, bool debug_on);
+		SwapChain_DX12(RenderDevice_DX12* device, HWND hwnd, std::span<Texture> handles_to_attach_to, bool debug_on);
 		~SwapChain_DX12();
 
 		// Public interface
