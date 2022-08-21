@@ -30,14 +30,14 @@ namespace mira
 	};
 
 
-	enum class ViewType : u8
+	enum class ViewType
 	{
-		None = 1 << 0,
-		RenderTarget = 1 << 1,			// RTV
-		DepthStencil = 1 << 2,			// DSV
-		ShaderResource = 1 << 3,		// SRV
-		UnorderedAccess = 1 << 4,		// UAV
-		Constant = 1 << 5				// CBV
+		None,
+		RenderTarget,			// RTV
+		DepthStencil,			// DSV
+		ShaderResource,			// SRV
+		UnorderedAccess,		// UAV
+		Constant				// CBV
 	};
 	
 	enum class DepthFormat
@@ -148,19 +148,19 @@ namespace mira
 		return static_cast<u16>(a) & static_cast<u16>(b);
 	}
 
-	inline ViewType operator|(ViewType a, ViewType b)
-	{
-		return static_cast<ViewType>(static_cast<u16>(a) | static_cast<u16>(b));
-	}
+	//inline ViewType operator|(ViewType a, ViewType b)
+	//{
+	//	return static_cast<ViewType>(static_cast<u16>(a) | static_cast<u16>(b));
+	//}
 
-	inline ViewType operator|=(ViewType& a, ViewType b)
-	{
-		a = a | b;
-		return a;
-	}
+	//inline ViewType operator|=(ViewType& a, ViewType b)
+	//{
+	//	a = a | b;
+	//	return a;
+	//}
 
-	inline u8 operator&(ViewType a, ViewType b)
-	{
-		return static_cast<u8>(a) & static_cast<u8>(b);
-	}
+	//inline u8 operator&(ViewType a, ViewType b)
+	//{
+	//	return static_cast<u8>(a) & static_cast<u8>(b);
+	//}
 }

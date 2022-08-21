@@ -21,25 +21,17 @@ Application::Application()
 	};
 	m_window = std::make_unique<Window>(GetModuleHandle(NULL), win_proc_callback, c_width, c_height);
 
-	mira::HandleAllocator thing;
-	auto thing1 = thing.allocate<mira::Buffer>();
-	auto thing2 = thing.allocate<mira::Buffer>();
-	auto thing3 = thing.allocate<mira::Texture>();
-
-
-
+	mira::HandleAllocator rhp;
 	auto be_dx = std::make_unique<mira::RenderBackend_DX12>(true);
-	mira::RenderDevice* rd = be_dx->create_device();
+	auto rd = be_dx->create_device();
 	auto sclr = std::make_unique<mira::ShaderCompiler_DXC>();
 
-	mira::TypedHandlePool rhp;	// Render handle pool
-
 	// Create swapchain (requires at least 2 buffers)
-	mira::Texture bb_textures[]{ rhp.allocate_handle<mira::Texture>(), rhp.allocate_handle<mira::Texture>() };
+	mira::Texture bb_textures[]{ rhp.allocate<mira::Texture>(), rhp.allocate<mira::Texture>() };
 	mira::SwapChain* sc = rd->create_swapchain(m_window->get_hwnd(), bb_textures);
 
 	// Create fullscreen blit pipeline
-	auto blit_pipe = rhp.allocate_handle<mira::Pipeline>();
+	auto blit_pipe = rhp.allocate<mira::Pipeline>();
 	{
 		auto vs = sclr->compile_from_file("fullscreen_tri_vs.hlsl", mira::ShaderType::Vertex);
 		auto ps = sclr->compile_from_file("blit_ps.hlsl", mira::ShaderType::Pixel);
@@ -53,7 +45,7 @@ Application::Application()
 	}
 
 	// Create renderpasses for swapchain
-	mira::RenderPass bb_rps[2] = { rhp.allocate_handle<mira::RenderPass>(), rhp.allocate_handle<mira::RenderPass>() };
+	mira::RenderPass bb_rps[2] = { rhp.allocate<mira::RenderPass>(), rhp.allocate<mira::RenderPass>() };
 	for (u32 i = 0; i < _countof(bb_rps); ++i)
 	{
 		rd->create_renderpass(mira::RenderPassBuilder()
@@ -61,6 +53,24 @@ Application::Application()
 			.build(),
 			bb_rps[i]);
 	}
+
+	// view testing
+	{
+		auto buf = rhp.allocate<mira::Buffer>();
+		mira::BufferDesc bdesc{};
+		bdesc.size = 256;
+		bdesc.usage = mira::UsageIntent::Constant;
+		bdesc.memory_type = mira::MemoryType::Upload;
+		rd->create_buffer(bdesc, buf);
+
+		auto v1 = rd->create_view(buf, mira::ViewType::Constant, 0, 256);
+		auto v2 = rd->create_view(buf, mira::ViewType::Constant, 256, 256);
+
+		auto handle = rd->get_global_descriptor(buf, v2);
+
+		rd->free_buffer(buf);
+	}
+
 
 	while (m_window->is_alive())
 	{
@@ -101,8 +111,6 @@ Application::Application()
 	}
 
 	rd->flush();
-
-	rhp.free_handle(blit_pipe);
 }
 
 void Application::run()

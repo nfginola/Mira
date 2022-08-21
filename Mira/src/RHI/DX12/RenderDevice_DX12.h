@@ -35,14 +35,9 @@ namespace mira
 		void create_graphics_pipeline(const GraphicsPipelineDesc& desc, Pipeline handle);
 		void create_renderpass(const RenderPassDesc& desc, RenderPass handle);
 
-		// Need to give full range of options (unpack enums for Buffer Views)
-		// resort to -->  
-		/*
-			BufferViewDesc::structured(..)
-			BufferViewDesc::unordered_access(..)
-			BufferViewDesc::constant(..)
-		*/
-		u32 create_view(Buffer buffer, ViewType view, u32 offset, u32 size, bool raw = false);
+
+		u32 create_view(Buffer buffer, ViewType view, u32 offset, u32 stride, u32 count = 1, bool raw = false);
+
 
 		// Need to give full range of options (unpack enums for Texture views)
 		//u32 create_view(Texture texture)
@@ -50,6 +45,10 @@ namespace mira
 		// Sensitive resources that may be in-flight
 		void free_buffer(Buffer handle);
 		void free_texture(Texture handle);
+		void free_pipeline(Pipeline handle);
+		void free_renderpass(RenderPass handle);
+
+
 		void recycle_sync(SyncReceipt receipt);
 		void recycle_command_list(RenderCommandList* list);
 
@@ -59,8 +58,8 @@ namespace mira
 		void wait_for_gpu(SyncReceipt&& receipt);
 		
 		// Grab a GPU accessible view to a specific resource
-		u32 get_global_descriptor(Buffer buffer, u32 view);
-		u32 get_global_descriptor(Texture buffer, u32 view);
+		u32 get_global_descriptor(Buffer buffer, u32 view) const;
+		u32 get_global_descriptor(Texture texture, u32 view) const;
 
 		RenderCommandList* allocate_command_list(QueueType queue = QueueType::Graphics);
 
@@ -150,7 +149,7 @@ namespace mira
 		ComPtr<D3D12MA::Allocator> m_dma;
 
 		// Resource storage
-		std::vector<std::optional<std::shared_ptr<void>>> m_resources;
+		//std::vector<std::optional<std::shared_ptr<void>>> m_resources;
 		std::vector<std::optional<Buffer_Storage>> m_buffers;
 		std::vector<std::optional<Texture_Storage>> m_textures;
 		std::vector<std::optional<Pipeline_Storage>> m_pipelines;
@@ -181,5 +180,33 @@ namespace mira
 
 
 	};
+		
+	// Helper for inserting/getting resources in an array-like manner
+	template <typename T>
+	void try_insert(std::vector<std::optional<T>>& vec, const T& element, u32 index)
+	{
+		// resize if needed
+		if (vec.size() <= index)
+			vec.resize(vec.size() * 4);
+
+		assert(!vec[index].has_value());
+		vec[index] = element;
+	}
+
+	template <typename T>
+	const T& try_get(const std::vector<std::optional<T>>& vec, u32 index)
+	{
+		assert(vec.size() > index);
+		assert(vec[index].has_value());
+		return *(vec[index]);
+	}
+
+	template <typename T>
+	T& try_get(std::vector<std::optional<T>>& vec, u32 index)
+	{
+		assert(vec.size() > index);
+		assert(vec[index].has_value());
+		return *(vec[index]);
+	}
 }
 
