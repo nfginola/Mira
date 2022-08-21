@@ -6,11 +6,12 @@
 #include "RHI/PipelineBuilder.h"
 #include "Window/Window.h"
 
-#include "TypedHandlePool.h"
+#include "Handles/TypedHandlePool.h"
+
+#include "Handles/HandleAllocator.h"
 
 Application::Application()
 {
-
 	const UINT c_width = 1600;
 	const UINT c_height = 900;
 
@@ -19,6 +20,12 @@ Application::Application()
 		return this->window_proc(hwnd, uMsg, wParam, lParam);
 	};
 	m_window = std::make_unique<Window>(GetModuleHandle(NULL), win_proc_callback, c_width, c_height);
+
+	mira::HandleAllocator thing;
+	auto thing1 = thing.allocate<mira::Buffer>();
+	auto thing2 = thing.allocate<mira::Buffer>();
+	auto thing3 = thing.allocate<mira::Texture>();
+
 
 
 	auto be_dx = std::make_unique<mira::RenderBackend_DX12>(true);

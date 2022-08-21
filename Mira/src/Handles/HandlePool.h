@@ -9,6 +9,8 @@
 
 	Lower 32-bits is used as the actual index. Referred to as "keys"
 	Upper 32-bits is used as a generational counter. Refered to as "counters"
+
+	Currently NOT threadsafe
 */	
 
 class HandlePool

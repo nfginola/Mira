@@ -1,5 +1,5 @@
 #pragma once
-#include "RenderResourceHandle.h"
+#include "../RenderResourceHandle.h"
 #include "ResourceTypes.h"
 
 namespace mira

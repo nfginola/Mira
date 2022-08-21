@@ -156,7 +156,7 @@ copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(Tar
     <ClCompile Include="src\RHI\DX12\Utilities\DX12Queue.cpp" />
     <ClCompile Include="src\RHI\DX12\Utilities\DX12DescriptorHeap.cpp" />
     <ClCompile Include="src\RHI\DX12\Utilities\DX12DescriptorManager.cpp" />
-    <ClCompile Include="src\HandlePool.cpp" />
+    <ClCompile Include="src\Handles\HandlePool.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\RHI\DX12\Utilities\DX12DescriptorAllocatorDMA.cpp" />
     <ClCompile Include="src\RHI\DX12\RenderBackend_DX12.cpp" />
@@ -170,7 +170,8 @@ copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(Tar
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Application.h" />
-    <ClInclude Include="src\RHI\BarrierTypes.h" />
+    <ClInclude Include="src\Handles\HandleAllocator.h" />
+    <ClInclude Include="src\RHI\Types\BarrierTypes.h" />
     <ClInclude Include="src\RHI\DX12\ShaderCompiler_DXC.h" />
     <ClInclude Include="src\RHI\DX12\RenderCommandList_DX12.h" />
     <ClInclude Include="src\RHI\DX12\Utilities\DX12RenderPass.h" />
@@ -179,26 +180,26 @@ copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(Tar
     <ClInclude Include="src\RHI\DX12\Utilities\DX12Queue.h" />
     <ClInclude Include="src\RHI\DX12\Utilities\DX12DescriptorHeap.h" />
     <ClInclude Include="src\RHI\DX12\Utilities\DX12DescriptorManager.h" />
-    <ClInclude Include="src\HandlePool.h" />
+    <ClInclude Include="src\Handles\HandlePool.h" />
     <ClInclude Include="src\Common.h" />
     <ClInclude Include="src\RHI\DX12\Utilities\DX12DescriptorAllocatorDMA.h" />
     <ClInclude Include="src\RHI\DX12\Utilities\DX12DescriptorChunk.h" />
     <ClInclude Include="src\RHI\DX12\DX12CommonIncludes.h" />
     <ClInclude Include="src\RHI\PipelineBuilder.h" />
-    <ClInclude Include="src\RHI\PipelineTypes.h" />
+    <ClInclude Include="src\RHI\Types\PipelineTypes.h" />
     <ClInclude Include="src\RHI\RenderBackend.h" />
     <ClInclude Include="src\RHI\DX12\RenderBackend_DX12.h" />
     <ClInclude Include="src\RHI\RenderCommandList.h" />
     <ClInclude Include="src\RHI\RenderDevice.h" />
     <ClInclude Include="src\RHI\DX12\RenderDevice_DX12.h" />
-    <ClInclude Include="src\RHI\RenderPassTypes.h" />
-    <ClInclude Include="src\RHI\ResourceTypes.h" />
+    <ClInclude Include="src\RHI\Types\RenderPassTypes.h" />
+    <ClInclude Include="src\RHI\Types\ResourceTypes.h" />
     <ClInclude Include="src\RHI\RHIDefines.h" />
     <ClInclude Include="src\RHI\ShaderCompiler.h" />
-    <ClInclude Include="src\RHI\ShaderTypes.h" />
+    <ClInclude Include="src\RHI\Types\ShaderTypes.h" />
     <ClInclude Include="src\RHI\SwapChain.h" />
     <ClInclude Include="src\RHI\SyncReceipt.h" />
-    <ClInclude Include="src\TypedHandlePool.h" />
+    <ClInclude Include="src\Handles\TypedHandlePool.h" />
     <ClInclude Include="src\RHI\RenderResourceHandle.h" />
     <ClInclude Include="src\RHI\RHITypes.h" />
     <ClInclude Include="src\RHI\DX12\SwapChain_DX12.h" />

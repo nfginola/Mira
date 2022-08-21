@@ -1,11 +1,12 @@
 #pragma once
 #include "../Common.h"
-#include "ShaderTypes.h"
-#include "PipelineTypes.h"
-#include "ResourceTypes.h"
 #include "RenderResourceHandle.h"
-#include "RenderPassTypes.h"
-#include "BarrierTypes.h"
+#include "Types/ShaderTypes.h"
+#include "Types/PipelineTypes.h"
+#include "Types/ResourceTypes.h"
+#include "Types/RenderPassTypes.h"
+#include "Types/BarrierTypes.h"
+#include "Types/RenderPassTypes.h"
 
 namespace mira
 {

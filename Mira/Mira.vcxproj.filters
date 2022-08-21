@@ -18,7 +18,7 @@
     <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\HandlePool.cpp">
+    <ClCompile Include="src\Handles\HandlePool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="vendor\D3D12MemoryAllocator\src\D3D12MemAlloc.cpp">
@@ -71,7 +71,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\HandlePool.h">
+    <ClInclude Include="src\Handles\HandlePool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vendor\D3D12MemoryAllocator\src\D3D12MemAlloc.h">
@@ -98,7 +98,7 @@
     <ClInclude Include="src\RHI\RHITypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\TypedHandlePool.h">
+    <ClInclude Include="src\Handles\TypedHandlePool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\RHI\DX12\Utilities\DX12DescriptorChunk.h">
@@ -128,13 +128,13 @@
     <ClInclude Include="src\RHI\DX12\ShaderCompiler_DXC.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RHI\ShaderTypes.h">
+    <ClInclude Include="src\RHI\Types\ShaderTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RHI\PipelineTypes.h">
+    <ClInclude Include="src\RHI\Types\PipelineTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RHI\ResourceTypes.h">
+    <ClInclude Include="src\RHI\Types\ResourceTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\RHI\PipelineBuilder.h">
@@ -155,7 +155,7 @@
     <ClInclude Include="src\RHI\DX12\Utilities\DX12RenderPass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RHI\RenderPassTypes.h">
+    <ClInclude Include="src\RHI\Types\RenderPassTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\RHI\RHIDefines.h">
@@ -173,7 +173,10 @@
     <ClInclude Include="src\Application.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RHI\BarrierTypes.h">
+    <ClInclude Include="src\RHI\Types\BarrierTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Handles\HandleAllocator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

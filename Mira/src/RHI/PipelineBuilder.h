@@ -1,5 +1,5 @@
 #pragma once
-#include "PipelineTypes.h"
+#include "Types/PipelineTypes.h"
 
 namespace mira
 {

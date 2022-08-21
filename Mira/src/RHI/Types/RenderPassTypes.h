@@ -1,6 +1,6 @@
 #pragma once
-#include "../Common.h"
-#include "RenderResourceHandle.h"
+#include "../../Common.h"
+#include "../RenderResourceHandle.h"
 
 namespace mira
 {

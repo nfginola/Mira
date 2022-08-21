@@ -1,5 +1,5 @@
 #pragma once
-#include "ShaderTypes.h"
+#include "Types/ShaderTypes.h"
 
 namespace mira
 {

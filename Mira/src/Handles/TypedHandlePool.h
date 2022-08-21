@@ -2,7 +2,7 @@
 #include "HandlePool.h"
 
 /*
-	Expects a type T which has a u64 member "m_handle"
+	Expects a type T which has a u64 member "handle"
 	Also expects type T to befriend this class.
 */
 class TypedHandlePool

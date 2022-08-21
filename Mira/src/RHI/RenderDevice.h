@@ -2,7 +2,6 @@
 #include "RHITypes.h"
 #include "RenderCommandList.h"
 #include "SyncReceipt.h"
-#include "RenderPassTypes.h"
 #include "SwapChain.h"
 
 namespace mira

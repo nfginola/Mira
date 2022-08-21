@@ -1,6 +1,6 @@
 #pragma once
-#include "../Common.h"
-#include "RHIDefines.h"
+#include "../../Common.h"
+#include "../RHIDefines.h"
 
 namespace mira
 {
