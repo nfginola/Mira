@@ -5,6 +5,13 @@
 
 namespace mira
 {
+	/*
+		This allocator intended for use per 'domain'.
+
+		For example, the graphics API may provide "Buffer", "Texture", "Pipeline" types, which can all fall under a single allocator.
+
+		A higher level API may instead provide "Mesh" or "Material" which can fall under another allocator.
+	*/
 	class HandleAllocator
 	{
 	public:	

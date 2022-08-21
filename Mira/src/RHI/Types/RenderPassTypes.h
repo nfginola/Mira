@@ -21,7 +21,7 @@ namespace mira
 	struct RenderPassTargetDesc
 	{
 		Texture texture;
-		u32 subresource{ 0 };
+		u32 view{ 0 };
 		RenderPassBeginAccessType begin_access;
 		RenderPassEndingAccessType end_access;
 
@@ -31,7 +31,7 @@ namespace mira
 	struct RenderPassDepthStencilTargetDesc
 	{
 		Texture texture;
-		u32 subresource{ 0 };
+		u32 view{ 0 };
 		RenderPassBeginAccessType begin_depth_access;
 		RenderPassEndingAccessType end_depth_access;
 		RenderPassBeginAccessType begin_stencil_access;
@@ -65,7 +65,7 @@ namespace mira
 			desc.texture = texture;
 			desc.begin_access = begin_access;
 			desc.end_access = ending_access;
-			desc.subresource = subresource;
+			desc.view = subresource;
 			m_rp_desc.render_target_descs.push_back(desc);
 			return *this;
 		}
@@ -92,7 +92,7 @@ namespace mira
 		{
 			m_rp_desc.depth_stencil_desc = RenderPassDepthStencilTargetDesc{};
 			m_rp_desc.depth_stencil_desc->texture = texture;
-			m_rp_desc.depth_stencil_desc->subresource = subresource;
+			m_rp_desc.depth_stencil_desc->view = subresource;
 			m_rp_desc.depth_stencil_desc->begin_depth_access = depth_begin;
 			m_rp_desc.depth_stencil_desc->end_depth_access = depth_end;
 			m_rp_desc.depth_stencil_desc->begin_stencil_access = stencil_begin;

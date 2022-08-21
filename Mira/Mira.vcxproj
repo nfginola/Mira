@@ -198,7 +198,7 @@ copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(Tar
     <ClInclude Include="src\RHI\ShaderCompiler.h" />
     <ClInclude Include="src\RHI\Types\ShaderTypes.h" />
     <ClInclude Include="src\RHI\SwapChain.h" />
-    <ClInclude Include="src\RHI\SyncReceipt.h" />
+    <ClInclude Include="src\RHI\Types\SyncReceipt.h" />
     <ClInclude Include="src\Handles\TypedHandlePool.h" />
     <ClInclude Include="src\RHI\RenderResourceHandle.h" />
     <ClInclude Include="src\RHI\RHITypes.h" />

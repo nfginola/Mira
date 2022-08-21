@@ -13,53 +13,6 @@
 
 namespace mira
 {
-	struct CPU_Subresource
-	{
-		std::optional<DX12DescriptorChunk> rtv, dsv;
-	};
-
-	struct GPU_Subresource
-	{
-		std::optional<DX12DescriptorChunk> cbv, srv, uav;
-	};
-
-	struct GPUResource_Storage
-	{
-		ComPtr<D3D12MA::Allocation> alloc;
-		ComPtr<ID3D12Resource> resource;
-
-		std::vector<GPU_Subresource> subresources;	// CBV/SRV/UAV (GPU)
-	};
-
-	struct Buffer_Storage : public GPUResource_Storage
-	{
-		BufferDesc desc;
-		u8* mapped_resource{ nullptr };
-	};
-
-	struct Texture_Storage : public GPUResource_Storage
-	{
-		TextureDesc desc;
-
-
-		std::vector<CPU_Subresource> cpu_subresources;
-	};
-
-	struct Pipeline_Storage
-	{
-		GraphicsPipelineDesc desc;
-		D3D_PRIMITIVE_TOPOLOGY topology{};
-		ComPtr<ID3D12PipelineState> pipeline;
-	};
-
-	struct RenderPass_Storage
-	{
-		RenderPassDesc desc;
-		std::vector<D3D12_RENDER_PASS_RENDER_TARGET_DESC> render_targets;
-		std::optional<D3D12_RENDER_PASS_DEPTH_STENCIL_DESC> depth_stencil{};
-		D3D12_RENDER_PASS_FLAGS flags{};
-	};
-
 
 	RenderDevice_DX12::RenderDevice_DX12(ComPtr<ID3D12Device5> device, IDXGIAdapter* adapter, bool debug) :
 		m_device(device),
@@ -126,28 +79,28 @@ namespace mira
 		if (desc.memory_type == MemoryType::Upload)
 			storage->resource->Map(0, {}, (void**)&storage->mapped_resource);
 
-		// Always allocate space for all three
-		// 0: CBV, 1: SRV, 2: UAV
-		// If one of them is not present, a null descriptor is bound at its place
-		mira::ViewType views{ mira::ViewType::None };
-		if (desc.usage & UsageIntent::Constant)
-			views |= mira::ViewType::Constant;
+		//// Always allocate space for all three
+		//// 0: CBV, 1: SRV, 2: UAV
+		//// If one of them is not present, a null descriptor is bound at its place
+		//mira::ViewType views{ mira::ViewType::None };
+		//if (desc.usage & UsageIntent::Constant)
+		//	views |= mira::ViewType::Constant;
 
-		if (desc.usage & UsageIntent::ShaderResource)
-			views |= mira::ViewType::ShaderResource;
-				
-		if (desc.usage & UsageIntent::UnorderedAccess)
-			views |= mira::ViewType::UnorderedAccess;
+		//if (desc.usage & UsageIntent::ShaderResource)
+		//	views |= mira::ViewType::ShaderResource;
+		//		
+		//if (desc.usage & UsageIntent::UnorderedAccess)
+		//	views |= mira::ViewType::UnorderedAccess;
 
-		// Store in contiguous array (constant time look-up)
-		if (m_resources.size() <= get_slot(handle.handle))
-			m_resources.resize(m_resources.size() * 4);
+		//// Store in contiguous array (constant time look-up)
+		//if (m_resources.size() <= get_slot(handle.handle))
+		//	m_resources.resize(m_resources.size() * 4);
 
 		assert(!m_resources[get_slot(handle.handle)].has_value());
 		m_resources[get_slot(handle.handle)] = storage;
 
-		// Create full view
-		create_subresource(handle, views, 0, desc.size);
+		//// Create full view
+		//create_view(handle, views, 0, desc.size);
 	}
 
 	void RenderDevice_DX12::create_texture(const TextureDesc& desc, Texture handle)
@@ -183,53 +136,53 @@ namespace mira
 		HR_VFY(hr);
 		
 
-		/*
-			Create default views:
-				Non-fully qualified format (TYPELESS) cannot be used with these default descriptors!
-				Raytracing AS cannot be used with these default descriptors!
-		*/
-		storage->cpu_subresources.push_back({});
-		if (desc.usage & UsageIntent::RenderTarget)
-		{
-			auto rtv_desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-			//D3D12_RENDER_TARGET_VIEW_DESC rtvd{};
-			//rtvd.Format = to_internal(desc.format);
-			//rtvd.ViewDimension = to_internal_rtv(desc.type);
-			//rtvd.Texture2D.MipSlice = 0;
-			//rtvd.Texture2D.PlaneSlice = 0;
-			m_device->CreateRenderTargetView(storage->resource.Get(), nullptr, rtv_desc.cpu_handle(0));
+		///*
+		//	Create default views:
+		//		Non-fully qualified format (TYPELESS) cannot be used with these default descriptors!
+		//		Raytracing AS cannot be used with these default descriptors!
+		//*/
+		//storage->cpu_subresources.push_back({});
+		//if (desc.usage & UsageIntent::RenderTarget)
+		//{
+		//	auto rtv_desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		//	//D3D12_RENDER_TARGET_VIEW_DESC rtvd{};
+		//	//rtvd.Format = to_internal(desc.format);
+		//	//rtvd.ViewDimension = to_internal_rtv(desc.type);
+		//	//rtvd.Texture2D.MipSlice = 0;
+		//	//rtvd.Texture2D.PlaneSlice = 0;
+		//	m_device->CreateRenderTargetView(storage->resource.Get(), nullptr, rtv_desc.cpu_handle(0));
 
-			// store descriptor
-			storage->cpu_subresources[storage->cpu_subresources.size() - 1].rtv = rtv_desc;
-		}
-		else if (desc.usage & UsageIntent::DepthStencil)
-		{
-			auto dsv_desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-			//D3D12_DEPTH_STENCIL_VIEW_DESC dsd{};
-			//dsd.Format = to_internal(desc.format);
-			//dsd.ViewDimension = to_internal_dsv(desc.type);
-			//dsd.Texture2D.MipSlice = 0;
-			m_device->CreateDepthStencilView(storage->resource.Get(), nullptr, dsv_desc.cpu_handle(0));
-			storage->cpu_subresources[storage->cpu_subresources.size() - 1].dsv = dsv_desc;
-		}
+		//	// store descriptor
+		//	storage->cpu_subresources[storage->cpu_subresources.size() - 1].rtv = rtv_desc;
+		//}
+		//else if (desc.usage & UsageIntent::DepthStencil)
+		//{
+		//	auto dsv_desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+		//	//D3D12_DEPTH_STENCIL_VIEW_DESC dsd{};
+		//	//dsd.Format = to_internal(desc.format);
+		//	//dsd.ViewDimension = to_internal_dsv(desc.type);
+		//	//dsd.Texture2D.MipSlice = 0;
+		//	m_device->CreateDepthStencilView(storage->resource.Get(), nullptr, dsv_desc.cpu_handle(0));
+		//	storage->cpu_subresources[storage->cpu_subresources.size() - 1].dsv = dsv_desc;
+		//}
 
-		if (desc.usage & UsageIntent::ShaderResource)
-		{
-			auto srv_desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-			//D3D12_SHADER_RESOURCE_VIEW_DESC srvd{};
-			//srvd.Format = to_internal(desc.format);
-			//srvd.ViewDimension = to_internal_srv(desc.type);
-			//srvd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			//srvd.Texture2D.MipLevels = -1;
-			//srvd.Texture2D.MostDetailedMip = 0;
-			//srvd.Texture2D.PlaneSlice = 0;
-			//srvd.Texture2D.ResourceMinLODClamp = 0;
-			m_device->CreateShaderResourceView(storage->resource.Get(), nullptr, srv_desc.cpu_handle(0));
+		//if (desc.usage & UsageIntent::ShaderResource)
+		//{
+		//	auto srv_desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		//	//D3D12_SHADER_RESOURCE_VIEW_DESC srvd{};
+		//	//srvd.Format = to_internal(desc.format);
+		//	//srvd.ViewDimension = to_internal_srv(desc.type);
+		//	//srvd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		//	//srvd.Texture2D.MipLevels = -1;
+		//	//srvd.Texture2D.MostDetailedMip = 0;
+		//	//srvd.Texture2D.PlaneSlice = 0;
+		//	//srvd.Texture2D.ResourceMinLODClamp = 0;
+		//	m_device->CreateShaderResourceView(storage->resource.Get(), nullptr, srv_desc.cpu_handle(0));
 
-			GPU_Subresource subres{};
-			subres.srv = srv_desc;
-			storage->subresources.push_back(subres);
-		}
+		//	GPU_Subresource subres{};
+		//	subres.srv = srv_desc;
+		//	storage->subresources.push_back(subres);
+		//}
 
 
 		// Insert to storage
@@ -276,8 +229,8 @@ namespace mira
 			auto res = (Texture_Storage*)m_resources[get_slot(rtd.texture.handle)]->get();
 
 			auto api = to_internal(rtd);
-			assert(res->cpu_subresources[rtd.subresource].rtv.has_value());
-			api.cpuDescriptor = res->cpu_subresources[rtd.subresource].rtv->cpu_handle(0);
+			assert(res->views[rtd.view].type == ViewType::RenderTarget);
+			api.cpuDescriptor = res->views[rtd.view].view.cpu_handle(0);
 
 			api.BeginningAccess.Clear.ClearValue.Format = to_internal(res->desc.format);
 			api.BeginningAccess.Clear.ClearValue.Color[0] = res->desc.clear_color[0];
@@ -295,8 +248,8 @@ namespace mira
 			assert(m_resources[get_slot(desc.depth_stencil_desc->texture.handle)].has_value());
 			auto res = (Texture_Storage*)m_resources[get_slot(desc.depth_stencil_desc->texture.handle)]->get();
 			auto depth_api = to_internal(*desc.depth_stencil_desc);
-			assert(res->cpu_subresources[desc.depth_stencil_desc->subresource].dsv.has_value());
-			depth_api.cpuDescriptor = res->cpu_subresources[desc.depth_stencil_desc->subresource].dsv->cpu_handle(0);
+			assert(res->views[desc.depth_stencil_desc->view].type == ViewType::DepthStencil);
+			depth_api.cpuDescriptor = res->views[desc.depth_stencil_desc->view].view.cpu_handle(0);
 			storage->depth_stencil = depth_api;
 		}
 		
@@ -311,16 +264,9 @@ namespace mira
 		assert(m_resources[get_slot(handle.handle)].has_value());
 
 		auto res = (Buffer_Storage*)m_resources[get_slot(handle.handle)]->get();
-		for (auto& subres : res->subresources)
-		{
-			if (subres.cbv.has_value())
-				m_descriptor_mgr->free(&(*subres.cbv));
-			if (subres.srv.has_value())
-				m_descriptor_mgr->free(&(*subres.srv));
-			if (subres.uav.has_value())
-				m_descriptor_mgr->free(&(*subres.uav));
 
-		}
+		for (auto view : res->views)
+			m_descriptor_mgr->free(&view.view);
 
 		m_resources[get_slot(handle.handle)]->reset();
 		m_resources[get_slot(handle.handle)] = {};
@@ -331,143 +277,103 @@ namespace mira
 		assert(m_resources[get_slot(handle.handle)].has_value());
 
 		auto res = (Texture_Storage*)m_resources[get_slot(handle.handle)]->get();
-		for (auto& subres : res->subresources)
-		{
-			if (subres.cbv.has_value())
-				m_descriptor_mgr->free(&(*subres.cbv));
-			if (subres.srv.has_value())
-				m_descriptor_mgr->free(&(*subres.srv));
-			if (subres.uav.has_value())
-				m_descriptor_mgr->free(&(*subres.uav));
 
-		}
-
-		for (auto [rtv, dsv] : res->cpu_subresources)
-		{
-			if (rtv.has_value())
-				m_descriptor_mgr->free(&(*rtv));
-			if (dsv.has_value())
-				m_descriptor_mgr->free(&(*dsv));
-		}
+		for (auto view : res->views)
+			m_descriptor_mgr->free(&view.view);
 
 		m_resources[get_slot(handle.handle)].reset();
 		m_resources[get_slot(handle.handle)] = {};
 	}
 
-	u32 RenderDevice_DX12::create_subresource(Buffer buffer, ViewType view, u32 offset, u32 size, bool raw)
+	u32 RenderDevice_DX12::create_view(Buffer buffer, ViewType view, u32 offset, u32 size, bool raw)
 	{
 		// DS and RT not allowed for buffers
 		if ((view & ViewType::DepthStencil) || (view & ViewType::RenderTarget))
 			assert(false);
 
-		auto resource = (Buffer_Storage*)m_resources[get_slot(buffer.handle)]->get();
-		const auto& desc = resource->desc;
+		//auto resource = (Buffer_Storage*)m_resources[get_slot(buffer.handle)]->get();
+		//const auto& desc = resource->desc;
 
 
-		const bool create_cbv = view & ViewType::Constant;
-		const bool create_srv = view & ViewType::ShaderResource;
-		const bool create_uav = view & ViewType::UnorderedAccess;
+		//const bool create_cbv = view & ViewType::Constant;
+		//const bool create_srv = view & ViewType::ShaderResource;
+		//const bool create_uav = view & ViewType::UnorderedAccess;
 
-		// Allocate descriptors
-		GPU_Subresource subres{};
+		//// Allocate descriptors
+		//GPU_Subresource subres{};
 
-		// Create CBV
-		// https://microsoft.github.io/DirectX-Specs/d3d/ResourceBinding.html
-		// NULL DESCRIPTORS: "non-root CBV --> view desc can be passed as NULL"
-		if (create_cbv)
-		{
-			subres.cbv = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-			assert(size % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT == 0);
-			assert(offset % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT == 0);
+		//// Create CBV
+		//// https://microsoft.github.io/DirectX-Specs/d3d/ResourceBinding.html
+		//// NULL DESCRIPTORS: "non-root CBV --> view desc can be passed as NULL"
+		//if (create_cbv)
+		//{
+		//	subres.cbv = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		//	assert(size % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT == 0);
+		//	assert(offset % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT == 0);
 
-			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvd{};
-			cbvd.BufferLocation = resource->resource.Get()->GetGPUVirtualAddress();
-			cbvd.SizeInBytes = size;
-			m_device->CreateConstantBufferView(&cbvd, subres.cbv->cpu_handle(0));
-		}
+		//	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvd{};
+		//	cbvd.BufferLocation = resource->resource.Get()->GetGPUVirtualAddress();
+		//	cbvd.SizeInBytes = size;
+		//	m_device->CreateConstantBufferView(&cbvd, subres.cbv->cpu_handle(0));
+		//}
 
-		if (create_srv || create_uav)
-		{
-			assert(offset % desc.stride == 0);
-			assert(size % desc.stride == 0);
-		}
+		//if (create_srv || create_uav)
+		//{
+		//	assert(offset % desc.stride == 0);
+		//	assert(size % desc.stride == 0);
+		//}
 
 
-		if (create_srv)
-		{
-			subres.srv = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{};
-			srvd.Format = DXGI_FORMAT_UNKNOWN;
-			srvd.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-			srvd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			srvd.Buffer.FirstElement = offset / desc.stride;
-			srvd.Buffer.NumElements = size / desc.stride;
-			srvd.Buffer.StructureByteStride = desc.stride;
-			srvd.Buffer.Flags = raw ? D3D12_BUFFER_SRV_FLAG_RAW : D3D12_BUFFER_SRV_FLAG_NONE;
-			// Create null descriptor if we shouldn't create SRV
-			m_device->CreateShaderResourceView(create_srv ? resource->resource.Get() : nullptr, &srvd, subres.srv->cpu_handle(1));
-		}
+		//if (create_srv)
+		//{
+		//	subres.srv = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		//	D3D12_SHADER_RESOURCE_VIEW_DESC srvd{};
+		//	srvd.Format = DXGI_FORMAT_UNKNOWN;
+		//	srvd.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+		//	srvd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		//	srvd.Buffer.FirstElement = offset / desc.stride;
+		//	srvd.Buffer.NumElements = size / desc.stride;
+		//	srvd.Buffer.StructureByteStride = desc.stride;
+		//	srvd.Buffer.Flags = raw ? D3D12_BUFFER_SRV_FLAG_RAW : D3D12_BUFFER_SRV_FLAG_NONE;
+		//	// Create null descriptor if we shouldn't create SRV
+		//	m_device->CreateShaderResourceView(create_srv ? resource->resource.Get() : nullptr, &srvd, subres.srv->cpu_handle(1));
+		//}
 
-		if (create_uav)
-		{
-			subres.uav = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-			D3D12_UNORDERED_ACCESS_VIEW_DESC uavd{};
-			uavd.Format = DXGI_FORMAT_UNKNOWN;
-			uavd.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-			uavd.Buffer.FirstElement = offset / desc.stride;
-			uavd.Buffer.NumElements = size / desc.stride;
-			uavd.Buffer.StructureByteStride = desc.stride;
-			uavd.Buffer.CounterOffsetInBytes = 0;
-			uavd.Buffer.Flags = raw ? D3D12_BUFFER_UAV_FLAG_RAW : D3D12_BUFFER_UAV_FLAG_NONE;
-			// We never use counter buffers, user has to create their own RW buffer with counters and do InterlockedAdd
-			// This makes counting explicit on the user side and simplifies view creation (always no counter)
-			m_device->CreateUnorderedAccessView(create_uav ? resource->resource.Get() : nullptr, nullptr, &uavd, subres.uav->cpu_handle(2));
+		//if (create_uav)
+		//{
+		//	subres.uav = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		//	D3D12_UNORDERED_ACCESS_VIEW_DESC uavd{};
+		//	uavd.Format = DXGI_FORMAT_UNKNOWN;
+		//	uavd.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+		//	uavd.Buffer.FirstElement = offset / desc.stride;
+		//	uavd.Buffer.NumElements = size / desc.stride;
+		//	uavd.Buffer.StructureByteStride = desc.stride;
+		//	uavd.Buffer.CounterOffsetInBytes = 0;
+		//	uavd.Buffer.Flags = raw ? D3D12_BUFFER_UAV_FLAG_RAW : D3D12_BUFFER_UAV_FLAG_NONE;
+		//	// We never use counter buffers, user has to create their own RW buffer with counters and do InterlockedAdd
+		//	// This makes counting explicit on the user side and simplifies view creation (always no counter)
+		//	m_device->CreateUnorderedAccessView(create_uav ? resource->resource.Get() : nullptr, nullptr, &uavd, subres.uav->cpu_handle(2));
 
-		}
+		//}
 
-		resource->subresources.push_back(subres);
-		const u32 subresource = (u32)resource->subresources.size() - 1;
+		//resource->subresources.push_back(subres);
+		//const u32 subresource = (u32)resource->subresources.size() - 1;
 
-		return subresource;
+		return 0;
 	}
 	
 
-	u32 RenderDevice_DX12::get_global_descriptor(Buffer buffer, ViewType view, u32 subresource)
+	u32 RenderDevice_DX12::get_global_descriptor(Buffer buffer, u32 view)
 	{
-		assert(m_resources[get_slot(buffer.handle)].has_value());		// handle use after delete
-
-		const auto& resource = (Buffer_Storage*)m_resources[get_slot(buffer.handle)]->get();
-		switch (view)
-		{
-		case ViewType::Constant:
-			return (u32)resource->subresources[subresource].cbv->index_offset_from_base();
-		case ViewType::ShaderResource:
-			return (u32)resource->subresources[subresource].srv->index_offset_from_base();
-		case ViewType::UnorderedAccess:
-			return (u32)resource->subresources[subresource].uav->index_offset_from_base();
-		default:
-			assert(false);
-			return 0;
-		}
+		// to implement
+		assert(false);
+		return 0;
 	}
 
-	u32 RenderDevice_DX12::get_global_descriptor(Texture texture, ViewType view, u32 subresource)
+	u32 RenderDevice_DX12::get_global_descriptor(Texture buffer, u32 view)
 	{
-		assert(m_resources[get_slot(texture.handle)].has_value());	// handle use after delete
-
-		const auto& resource = (Buffer_Storage*)m_resources[get_slot(texture.handle)]->get();
-		switch (view)
-		{
-		case ViewType::Constant:
-			return (u32)resource->subresources[subresource].cbv->index_offset_from_base();
-		case ViewType::ShaderResource:
-			return (u32)resource->subresources[subresource].srv->index_offset_from_base();
-		case ViewType::UnorderedAccess:
-			return (u32)resource->subresources[subresource].uav->index_offset_from_base();
-		default:
-			assert(false);
-			return 0;
-		}
+		assert(false);
+		return 0;
 	}
 
 	RenderCommandList* RenderDevice_DX12::allocate_command_list(QueueType queue)
@@ -759,7 +665,7 @@ namespace mira
 		storage->resource = texture;
 		auto desc = texture->GetDesc();
 
-		storage->cpu_subresources.push_back({});
+		//storage->cpu_subresources.push_back({});
 		auto rtv_desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 		D3D12_RENDER_TARGET_VIEW_DESC rtvd{};
 		rtvd.Format = desc.Format;
@@ -769,14 +675,10 @@ namespace mira
 		m_device->CreateRenderTargetView(storage->resource.Get(), &rtvd, rtv_desc.cpu_handle(0));
 
 		// store descriptor
-		storage->cpu_subresources[storage->cpu_subresources.size() - 1].rtv = rtv_desc;
+		//storage->cpu_subresources[storage->cpu_subresources.size() - 1].rtv = rtv_desc;
 
-		// Create SRV always
-		auto srv_desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-		m_device->CreateShaderResourceView(storage->resource.Get(), nullptr, srv_desc.cpu_handle(0));
-		GPU_Subresource subres;
-		subres.srv = srv_desc;
-		storage->subresources.push_back(subres);
+		storage->views.push_back(ResourceView(ViewType::RenderTarget, rtv_desc));
+
 
 		// Insert to storage
 		if (m_resources.size() <= get_slot(handle.handle))

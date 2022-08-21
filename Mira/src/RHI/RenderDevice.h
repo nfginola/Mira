@@ -1,7 +1,6 @@
 #pragma once
 #include "RHITypes.h"
 #include "RenderCommandList.h"
-#include "SyncReceipt.h"
 #include "SwapChain.h"
 
 namespace mira
@@ -32,10 +31,10 @@ namespace mira
 		// Copies to a mapped buffer
 		virtual void upload_to_buffer(Buffer buffer, u32 dst_offset, void* data, u32 size) = 0;
 
-		virtual u32 create_subresource(Buffer buffer, ViewType view, u32 offset, u32 size, bool raw = false) = 0;
+		virtual u32 create_view(Buffer buffer, ViewType view, u32 offset, u32 size, bool raw = false) = 0;
 
-		virtual u32 get_global_descriptor(Buffer buffer, ViewType view, u32 subresource = 0) = 0;
-		virtual u32 get_global_descriptor(Texture texture, ViewType view, u32 subresource = 0) = 0;
+		virtual u32 get_global_descriptor(Buffer buffer, u32 view) = 0;
+		virtual u32 get_global_descriptor(Texture buffer, u32 view) = 0;
 
 		virtual RenderCommandList* allocate_command_list(QueueType queue = QueueType::Graphics) = 0;
 
@@ -43,8 +42,7 @@ namespace mira
 		virtual std::optional<SyncReceipt> submit_command_lists(
 			std::span<RenderCommandList*> lists,
 			QueueType queue = QueueType::Graphics,
-			bool generate_sync = false, std::optional<SyncReceipt> sync_with = std::nullopt
-		) = 0;
+			bool generate_sync = false, std::optional<SyncReceipt> sync_with = std::nullopt) = 0;
 
 
 		virtual ~RenderDevice() {}

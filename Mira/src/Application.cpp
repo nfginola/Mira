@@ -32,7 +32,7 @@ Application::Application()
 	mira::RenderDevice* rd = be_dx->create_device();
 	auto sclr = std::make_unique<mira::ShaderCompiler_DXC>();
 
-	TypedHandlePool rhp;	// Render handle pool
+	mira::TypedHandlePool rhp;	// Render handle pool
 
 	// Create swapchain (requires at least 2 buffers)
 	mira::Texture bb_textures[]{ rhp.allocate_handle<mira::Texture>(), rhp.allocate_handle<mira::Texture>() };

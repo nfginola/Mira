@@ -1,13 +1,14 @@
 #pragma once
 #include "../RenderDevice.h"
 #include "DX12CommonIncludes.h"
+#include "Utilities/DX12DescriptorChunk.h"
 
 #include <unordered_map>
 #include <queue>
 #include <functional>
 #include <optional>
 
-namespace D3D12MA { class Allocator; }
+namespace D3D12MA { class Allocator; class Allocation; }
 class DX12DescriptorManager;
 class DX12Queue;
 class DX12Fence;
@@ -34,8 +35,17 @@ namespace mira
 		void create_graphics_pipeline(const GraphicsPipelineDesc& desc, Pipeline handle);
 		void create_renderpass(const RenderPassDesc& desc, RenderPass handle);
 
-		// Buffer-suballocation view
-		u32 create_subresource(Buffer buffer, ViewType view, u32 offset, u32 size, bool raw = false);
+		// Need to give full range of options (unpack enums for Buffer Views)
+		// resort to -->  
+		/*
+			BufferViewDesc::structured(..)
+			BufferViewDesc::unordered_access(..)
+			BufferViewDesc::constant(..)
+		*/
+		u32 create_view(Buffer buffer, ViewType view, u32 offset, u32 size, bool raw = false);
+
+		// Need to give full range of options (unpack enums for Texture views)
+		//u32 create_view(Texture texture)
 
 		// Sensitive resources that may be in-flight
 		void free_buffer(Buffer handle);
@@ -47,10 +57,10 @@ namespace mira
 
 		void flush();
 		void wait_for_gpu(SyncReceipt&& receipt);
-
-		// Grab bindless indices to update shader args
-		u32 get_global_descriptor(Buffer buffer, ViewType view, u32 subresource = 0);
-		u32 get_global_descriptor(Texture texture, ViewType view, u32 subresource = 0);
+		
+		// Grab a GPU accessible view to a specific resource
+		u32 get_global_descriptor(Buffer buffer, u32 view);
+		u32 get_global_descriptor(Texture buffer, u32 view);
 
 		RenderCommandList* allocate_command_list(QueueType queue = QueueType::Graphics);
 
@@ -92,18 +102,67 @@ namespace mira
 		std::vector<D3D12_STATIC_SAMPLER_DESC> grab_static_samplers();
 
 	private:
+		struct ResourceView
+		{
+			ViewType type{ ViewType::None };
+			DX12DescriptorChunk view;
+
+			ResourceView(ViewType type_in, const DX12DescriptorChunk& descriptor) : type(type_in), view(descriptor) {}
+		};
+
+		struct GPUResource_Storage
+		{
+			ComPtr<D3D12MA::Allocation> alloc;
+			ComPtr<ID3D12Resource> resource;
+			std::vector<ResourceView> views;
+		};
+
+		struct Buffer_Storage : public GPUResource_Storage
+		{
+			BufferDesc desc;
+			u8* mapped_resource{ nullptr };
+		};
+
+		struct Texture_Storage : public GPUResource_Storage
+		{
+			TextureDesc desc;
+		};
+
+		struct Pipeline_Storage
+		{
+			GraphicsPipelineDesc desc;
+			D3D_PRIMITIVE_TOPOLOGY topology{};
+			ComPtr<ID3D12PipelineState> pipeline;
+		};
+
+		struct RenderPass_Storage
+		{
+			RenderPassDesc desc;
+			std::vector<D3D12_RENDER_PASS_RENDER_TARGET_DESC> render_targets;
+			std::optional<D3D12_RENDER_PASS_DEPTH_STENCIL_DESC> depth_stencil{};
+			D3D12_RENDER_PASS_FLAGS flags{};
+		};
+
+	private:
 		ComPtr<ID3D12Device5> m_device;
 		bool m_debug_on{ false };
 		std::unique_ptr<DX12Queue> m_direct_queue, m_copy_queue, m_compute_queue;
 		ComPtr<D3D12MA::Allocator> m_dma;
 
+		// Resource storage
 		std::vector<std::optional<std::shared_ptr<void>>> m_resources;
+		std::vector<std::optional<Buffer_Storage>> m_buffers;
+		std::vector<std::optional<Texture_Storage>> m_textures;
+		std::vector<std::optional<Pipeline_Storage>> m_pipelines;
+		std::vector<std::optional<RenderPass_Storage>> m_renderpasses;
 
 		ComPtr<ID3D12RootSignature> m_common_rsig;
 		std::unique_ptr<DX12DescriptorManager> m_descriptor_mgr;
 
 		// Important that this is destructed before descriptor managers
+		// Registered descriptors for the backbuffers need to be deleted first.
 		std::unique_ptr<SwapChain_DX12> m_swapchain;
+
 
 
 
