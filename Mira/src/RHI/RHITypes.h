@@ -7,7 +7,6 @@
 #include "Types/RenderPassTypes.h"
 #include "Types/BarrierTypes.h"
 #include "Types/RenderPassTypes.h"
-#include "Types/SyncReceipt.h"
 
 namespace mira
 {

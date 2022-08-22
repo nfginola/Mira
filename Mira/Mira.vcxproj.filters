@@ -140,9 +140,6 @@
     <ClInclude Include="src\RHI\PipelineBuilder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RHI\Types\SyncReceipt.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\RHI\DX12\Utilities\DX12Queue.h">
       <Filter>Header Files</Filter>
     </ClInclude>

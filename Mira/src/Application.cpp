@@ -22,9 +22,9 @@ Application::Application()
 	m_window = std::make_unique<Window>(GetModuleHandle(NULL), win_proc_callback, c_width, c_height);
 
 	mira::HandleAllocator rhp;
+	auto sclr = std::make_unique<mira::ShaderCompiler_DXC>();
 	auto be_dx = std::make_unique<mira::RenderBackend_DX12>(true);
 	auto rd = be_dx->create_device();
-	auto sclr = std::make_unique<mira::ShaderCompiler_DXC>();
 
 	// Create swapchain (requires at least 2 buffers)
 	mira::Texture bb_textures[]{ rhp.allocate<mira::Texture>(), rhp.allocate<mira::Texture>() };
@@ -48,6 +48,12 @@ Application::Application()
 	mira::RenderPass bb_rps[2] = { rhp.allocate<mira::RenderPass>(), rhp.allocate<mira::RenderPass>() };
 	for (u32 i = 0; i < _countof(bb_rps); ++i)
 	{
+		/*
+			we should change append_rt to take a TextureView instead.
+
+			Its like we're baking in a Framebuffer here (array of image views)
+		*/
+
 		rd->create_renderpass(mira::RenderPassBuilder()
 			.append_rt(bb_textures[i], 0, mira::RenderPassBeginAccessType::Clear, mira::RenderPassEndingAccessType::Preserve)
 			.build(),
@@ -58,8 +64,7 @@ Application::Application()
 	{
 		auto buf = rhp.allocate<mira::Buffer>();
 		mira::BufferDesc bdesc{};
-		bdesc.size = 256;
-		bdesc.usage = mira::UsageIntent::Constant;
+		bdesc.size = 512;
 		bdesc.memory_type = mira::MemoryType::Upload;
 		rd->create_buffer(bdesc, buf);
 
@@ -100,13 +105,17 @@ Application::Application()
 
 		// submit cmd list
 		mira::RenderCommandList* cmdls[] = { cmd_list };
-		rd->submit_command_lists(cmdls, mira::QueueType::Graphics);
+		auto receipt = rhp.allocate<mira::SyncReceipt>();
+		rd->submit_command_lists(cmdls, mira::QueueType::Graphics, {}, receipt);
 
 		// present to swapchain
 		sc->present(false);
 
 		// wait for GPU frame
-		rd->flush();
+		//rd->flush();
+		rd->wait_for_gpu(receipt);
+		rhp.free(receipt);		// sync recycled internally since a CPU wait was done
+
 		rd->recycle_command_list(cmd_list);
 	}
 

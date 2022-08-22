@@ -11,22 +11,17 @@ namespace mira
 		Readback
 	};
 
-	// We should rename this to something else
 	enum class UsageIntent : u16
 	{
-		None = 1 << 0,				// All resources have a base SRV by default
+		None = 1 << 0,				
 		RenderTarget = 1 << 1,
 		DepthStencil = 1 << 2,
 
-		ShaderResource = 1 << 3,		// We should remove this
-
-		UnorderedAccess = 1 << 4,
-		DenyShaderResource = 1 << 5,
-		CrossAdapter = 1 << 6,
-		SimultaneousAccess = 1 << 7,
-		RaytracingAS = 1 << 8,
-
-		Constant = 1 << 9				// We should remove this
+		UnorderedAccess = 1 << 3,
+		DenyShaderResource = 1 << 4,
+		CrossAdapter = 1 << 5,
+		SimultaneousAccess = 1 << 6,
+		RaytracingAS = 1 << 7,
 	};
 
 

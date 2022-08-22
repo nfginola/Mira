@@ -24,6 +24,7 @@ namespace mira
 		m_textures.resize(1);
 		m_pipelines.resize(1);
 		m_renderpasses.resize(1);
+		m_syncs.resize(1);
 
 		m_syncs_in_play.resize(1);
 
@@ -49,10 +50,6 @@ namespace mira
 	void RenderDevice_DX12::create_buffer(const BufferDesc& desc, Buffer handle)
 	{
 		HRESULT hr{ S_OK };
-
-		// Force constant buffers to be multiple of 256
-		if (desc.usage & UsageIntent::Constant)
-			assert(desc.size % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT == 0);
 
 		D3D12MA::ALLOCATION_DESC ad{};
 		ad.HeapType = to_internal(desc.memory_type);
@@ -223,6 +220,8 @@ namespace mira
 		auto& storage = try_get(m_buffers, get_slot(buffer.handle));
 		auto desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
+		assert(offset + stride * count <= storage.desc.size);
+
 		if (view == ViewType::Constant)
 		{
 			assert(stride % 256 == 0);
@@ -232,7 +231,7 @@ namespace mira
 			cbvd.SizeInBytes = stride * count;
 			m_device->CreateConstantBufferView(&cbvd, desc.cpu_handle(0));
 
-			storage.views.push_back(ResourceView(view, desc));
+			storage.views.push_back(ResourceView_Storage(view, desc));
 			return (u32)storage.views.size() - 1;
 		}
 		else if (view == ViewType::ShaderResource)
@@ -250,7 +249,7 @@ namespace mira
 
 			m_device->CreateShaderResourceView(storage.resource.Get(), &srvd, desc.cpu_handle(0));
 
-			storage.views.push_back(ResourceView(view, desc));
+			storage.views.push_back(ResourceView_Storage(view, desc));
 			return (u32)storage.views.size() - 1;
 		}
 		else if (view == ViewType::UnorderedAccess)
@@ -270,7 +269,7 @@ namespace mira
 			// This makes counting explicit on the user side and simplifies API (always no counter)
 			m_device->CreateUnorderedAccessView(storage.resource.Get(), nullptr, &uavd, desc.cpu_handle(2));
 			
-			storage.views.push_back(ResourceView(view, desc));
+			storage.views.push_back(ResourceView_Storage(view, desc));
 			return (u32)storage.views.size() - 1;
 		}
 		else
@@ -345,7 +344,7 @@ namespace mira
 		return ret;
 	}
 
-	std::optional<SyncReceipt> RenderDevice_DX12::submit_command_lists(std::span<RenderCommandList*> lists, QueueType queue, bool generate_sync, std::optional<SyncReceipt> sync_with)
+	void RenderDevice_DX12::submit_command_lists(std::span<RenderCommandList*> lists, QueueType queue, std::optional<SyncReceipt> incoming_sync, std::optional<SyncReceipt> outgoing_sync)
 	{
 		ID3D12CommandList* cmdls[16];
 		for (u32 i = 0; i < lists.size(); ++i)
@@ -357,83 +356,48 @@ namespace mira
 			cmdls[i] = cmd_list;
 		}
 
-		DX12Queue* curr_queue{ nullptr };
-		switch (queue)
-		{
-		case QueueType::Graphics:
-			curr_queue = m_direct_queue.get();
-			break;
-		case QueueType::Compute:
-			curr_queue = m_compute_queue.get();
-			break;
-		case QueueType::Copy:
-			curr_queue = m_copy_queue.get();
-			break;
-		default:
-			curr_queue = m_direct_queue.get();
-		}
+		DX12Queue* curr_queue = get_queue(queue);
 
 		// Use sync receipt to check up sync handle and synchronize accordingly (Fence Wait) before executing command list
-		if (sync_with.has_value())
+		if (incoming_sync.has_value())
 		{
-			assert(m_syncs_in_play[sync_with->handle].has_value());
-			auto sync_prim = std::move(*m_syncs_in_play[sync_with->handle]);
-			m_syncs_in_play[sync_with->handle] = std::nullopt;
-
-			// Insert wait
-			sync_prim.fence->gpu_wait(*curr_queue);
+			// Lookup sync, and perform GPU wait
+			const auto& sync = try_get(m_syncs, get_slot(incoming_sync->handle));
+			sync.fence.gpu_wait(*curr_queue);
 		}
 
 		curr_queue->execute_command_lists((u32)lists.size(), cmdls);
 
 		std::optional<SyncReceipt> sync_receipt{ std::nullopt };
-		if (generate_sync)
+		if (outgoing_sync.has_value())
 		{
-			SyncPrimitive sync_prim{};
-			SyncReceipt receipt{};
+			SyncPrimitive sync{};
 
-			// reuse sync prims if any
-			if (!m_sync_pool.empty())
+			// Use recycled syncs
+			if (!m_recycled_syncs.empty())
 			{
-				sync_prim = std::move(m_sync_pool.front());
-				m_sync_pool.pop();
+				sync = std::move(m_recycled_syncs.front());
+				m_recycled_syncs.pop();
 			}
+			// Create new sync
 			else
 			{
-				// create new fence for use
-				sync_prim.fence = std::make_unique<DX12Fence>(m_device.Get(), 0);
+				sync.fence = DX12Fence(m_device.Get(), 0);
 			}
 
-			curr_queue->insert_signal(*sync_prim.fence);
+			curr_queue->insert_signal(sync.fence);
 
-			// reuse slot if any
-			if (!m_reusable_sync_slots.empty())
-			{
-				u32 slot = m_reusable_sync_slots.front();
-				m_reusable_sync_slots.pop();
-				m_syncs_in_play[slot] = std::move(sync_prim);
-				receipt.handle = slot;
-			}
-			else
-			{
-				m_syncs_in_play.push_back(std::move(sync_prim));
-				receipt.handle = (u32)(m_syncs_in_play.size() - 1);
-			}
-			sync_receipt = receipt;
-
+			try_insert(m_syncs, std::move(sync), get_slot(outgoing_sync->handle));
 		}
-
-		return sync_receipt;
 	}
 
 	void RenderDevice_DX12::recycle_sync(SyncReceipt receipt)
 	{
-		assert(m_syncs_in_play[receipt.handle].has_value());
-		auto sync_prim = std::move(*m_syncs_in_play[receipt.handle]);
-
-		m_reusable_sync_slots.push(receipt.handle);		// Recycle slot
-		m_sync_pool.push(std::move(sync_prim));			// Recycle sync primitive
-
+		auto sync = std::move(try_get(m_syncs, get_slot(receipt.handle)));
+		m_recycled_syncs.push(sync);
+		
+		// mark as empty
+		m_syncs[get_slot(receipt.handle)] = std::nullopt;
 	}
 
 	void RenderDevice_DX12::recycle_command_list(RenderCommandList* list)
@@ -476,13 +440,18 @@ namespace mira
 		m_direct_queue->flush();
 	}
 
-	void RenderDevice_DX12::wait_for_gpu(SyncReceipt&& receipt)
+	void RenderDevice_DX12::wait_for_gpu(SyncReceipt receipt)
 	{
-		assert(m_syncs_in_play[receipt.handle].has_value());
-		m_syncs_in_play[receipt.handle]->fence->cpu_wait();
+		const auto& sync = try_get(m_syncs, get_slot(receipt.handle));
+		sync.fence.cpu_wait();
 
 		recycle_sync(receipt);
 	}
+
+
+
+
+
 
 	ID3D12Resource* RenderDevice_DX12::get_api_buffer(Buffer buffer) const
 	{
@@ -575,7 +544,7 @@ namespace mira
 		m_device->CreateRenderTargetView(storage.resource.Get(), &rtvd, rtv_desc.cpu_handle(0));
 
 		// 0th view is always a render target for the backbuffer
-		storage.views.push_back(ResourceView(ViewType::RenderTarget, rtv_desc));
+		storage.views.push_back(ResourceView_Storage(ViewType::RenderTarget, rtv_desc));
 
 		try_insert(m_textures, storage, get_slot(handle.handle));
 	}
@@ -689,6 +658,26 @@ namespace mira
 		}
 
 		return samplers;
+	}
+
+	DX12Queue* RenderDevice_DX12::get_queue(QueueType type)
+	{
+		DX12Queue* curr_queue{ nullptr };
+		switch (type)
+		{
+		case QueueType::Graphics:
+			curr_queue = m_direct_queue.get();
+			break;
+		case QueueType::Compute:
+			curr_queue = m_compute_queue.get();
+			break;
+		case QueueType::Copy:
+			curr_queue = m_copy_queue.get();
+			break;
+		default:
+			curr_queue = m_direct_queue.get();
+		}
+		return curr_queue;
 	}
 
 

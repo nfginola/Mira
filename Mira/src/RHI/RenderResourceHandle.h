@@ -10,6 +10,10 @@ namespace mira
 	struct Pipeline { friend TypedHandlePool; u64 handle{ 0 }; };
 	struct RenderPass { friend TypedHandlePool; u64 handle{ 0 }; };
 
+	struct SyncReceipt { friend TypedHandlePool; u64 handle{ 0 }; };
+	//struct BufferView { friend TypedHandlePool; u64 handle{ 0 }; };
+	//struct TextureView { friend TypedHandlePool; u64 handle{ 0 }; };
+
 	static u32 get_slot(u64 handle)
 	{
 		static const u64 SLOT_MASK = ((u64)1 << std::numeric_limits<uint32_t>::digits) - 1; // Mask of the lower 32-bits

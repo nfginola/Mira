@@ -57,7 +57,7 @@ namespace mira
 
 		RenderPassBuilder& append_rt(
 			Texture texture,
-			u32 subresource,
+			u32 view,
 			RenderPassBeginAccessType begin_access, 
 			RenderPassEndingAccessType ending_access)
 		{
@@ -65,7 +65,7 @@ namespace mira
 			desc.texture = texture;
 			desc.begin_access = begin_access;
 			desc.end_access = ending_access;
-			desc.view = subresource;
+			desc.view = view;
 			m_rp_desc.render_target_descs.push_back(desc);
 			return *this;
 		}
@@ -73,18 +73,17 @@ namespace mira
 		// Conveniece API if the user only cares about using depth
 		RenderPassBuilder& add_depth(
 			Texture texture,
-			u32 subresource,
+			u32 view,
 			RenderPassBeginAccessType depth_begin,
-			RenderPassEndingAccessType depth_end
-		)
+			RenderPassEndingAccessType depth_end)
 		{
-			add_depth_stencil(texture, subresource, depth_begin, depth_end, RenderPassBeginAccessType::Discard, RenderPassEndingAccessType::Discard);
+			add_depth_stencil(texture, view, depth_begin, depth_end, RenderPassBeginAccessType::Discard, RenderPassEndingAccessType::Discard);
 			return *this;
 		}
 
 		RenderPassBuilder& add_depth_stencil(
 			Texture texture,
-			u32 subresource,
+			u32 view,
 			RenderPassBeginAccessType depth_begin,
 			RenderPassEndingAccessType depth_end,
 			RenderPassBeginAccessType stencil_begin,
@@ -92,7 +91,7 @@ namespace mira
 		{
 			m_rp_desc.depth_stencil_desc = RenderPassDepthStencilTargetDesc{};
 			m_rp_desc.depth_stencil_desc->texture = texture;
-			m_rp_desc.depth_stencil_desc->view = subresource;
+			m_rp_desc.depth_stencil_desc->view = view;
 			m_rp_desc.depth_stencil_desc->begin_depth_access = depth_begin;
 			m_rp_desc.depth_stencil_desc->end_depth_access = depth_end;
 			m_rp_desc.depth_stencil_desc->begin_stencil_access = stencil_begin;
