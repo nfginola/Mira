@@ -29,13 +29,13 @@ namespace mira
 		SwapChain* create_swapchain(void* hwnd, std::span<Texture> swapchain_buffer_handles);
 
 		// Resource creation/destruction
-		void create_buffer(const BufferDesc& desc, Buffer handle);
-		void create_texture(const TextureDesc& desc, Texture handle);
-		void create_graphics_pipeline(const GraphicsPipelineDesc& desc, Pipeline handle);
-		void create_renderpass(const RenderPassDesc& desc, RenderPass handle);
+		void create_buffer(Buffer handle, const BufferDesc& desc);
+		void create_texture(Texture handle, const TextureDesc& desc);
+		void create_graphics_pipeline(Pipeline handle, const GraphicsPipelineDesc& desc);
+		void create_renderpass(RenderPass handle, const RenderPassDesc& desc);
 
-		void create_view(Buffer buffer, const BufferViewDesc& desc, BufferView handle);
-		void create_view(Texture texture, const TextureViewDesc& desc, TextureView handle);
+		void create_view(BufferView handle, Buffer buffer, const BufferViewDesc& desc);
+		void create_view(TextureView handle, Texture texture, const TextureViewDesc& desc);
 		
 
 		// Sensitive resources that may be in-flight
@@ -55,10 +55,9 @@ namespace mira
 		void flush();
 		void wait_for_gpu(SyncReceipt receipt);
 		
-		// Grab a GPU accessible view to a specific resource
-		u32 get_global_descriptor(Buffer buffer, u32 view) const;
-		u32 get_global_descriptor(Texture texture, u32 view) const;
-
+		u32 get_global_descriptor(BufferView view) const;
+		u32 get_global_descriptor(TextureView view) const;
+	
 		RenderCommandList* allocate_command_list(QueueType queue = QueueType::Graphics);
 
 		void submit_command_lists(

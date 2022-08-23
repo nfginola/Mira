@@ -63,7 +63,7 @@ namespace mira
 		return m_swapchain.get();
 	}
 
-	void RenderDevice_DX12::create_buffer(const BufferDesc& desc, Buffer handle)
+	void RenderDevice_DX12::create_buffer(Buffer handle, const BufferDesc& desc)
 	{
 		HRESULT hr{ S_OK };
 
@@ -100,7 +100,7 @@ namespace mira
 		try_insert(m_buffers, storage, get_slot(handle.handle));
 	}
 
-	void RenderDevice_DX12::create_texture(const TextureDesc& desc, Texture handle)
+	void RenderDevice_DX12::create_texture(Texture handle, const TextureDesc& desc)
 	{
 		HRESULT hr{ S_OK };
 
@@ -135,7 +135,7 @@ namespace mira
 		try_insert(m_textures, storage, get_slot(handle.handle));
 	}
 
-	void RenderDevice_DX12::create_graphics_pipeline(const GraphicsPipelineDesc& desc, Pipeline handle)
+	void RenderDevice_DX12::create_graphics_pipeline(Pipeline handle, const GraphicsPipelineDesc& desc)
 	{
 		assert(!desc.vs->blob.empty() && !desc.ps->blob.empty());
 		HRESULT hr{ S_OK };
@@ -153,7 +153,7 @@ namespace mira
 		try_insert(m_pipelines, storage, get_slot(handle.handle));
 	}
 
-	void RenderDevice_DX12::create_renderpass(const RenderPassDesc& desc, RenderPass handle)
+	void RenderDevice_DX12::create_renderpass(RenderPass handle, const RenderPassDesc& desc)
 	{
 		//auto storage = std::make_shared<RenderPass_Storage>();
 		//storage->desc = desc;
@@ -235,7 +235,8 @@ namespace mira
 
 		m_texture_views[get_slot(handle.handle)] = std::nullopt;
 	}
-	void RenderDevice_DX12::create_view(Buffer buffer, const BufferViewDesc& desc, BufferView handle)
+	
+	void RenderDevice_DX12::create_view(BufferView handle, Buffer buffer, const BufferViewDesc& desc)
 	{
 		assert(desc.view != ViewType::None);
 		assert(desc.view != ViewType::DepthStencil);
@@ -307,7 +308,7 @@ namespace mira
 
 	}
 
-	void RenderDevice_DX12::create_view(Texture texture, const TextureViewDesc& desc, TextureView handle)
+	void RenderDevice_DX12::create_view(TextureView handle, Texture texture, const TextureViewDesc& desc)
 	{
 		assert(desc.view != ViewType::None);
 		assert(desc.view != ViewType::Constant);
@@ -352,20 +353,7 @@ namespace mira
 	}
 	
 
-	u32 RenderDevice_DX12::get_global_descriptor(Buffer buffer, u32 view) const
-	{
-		//return (u32)try_get(m_buffers, get_slot(buffer.handle)).views[view].view.index_offset_from_base();
-		return 0;
-	}
 
-	u32 RenderDevice_DX12::get_global_descriptor(Texture texture, u32 view) const
-	{
-		//return (u32)try_get(m_textures, get_slot(texture.handle)).views[view].view.index_offset_from_base();
-		return 0;
-
-		assert(false);
-		return 0;
-	}
 
 	RenderCommandList* RenderDevice_DX12::allocate_command_list(QueueType queue)
 	{
@@ -520,6 +508,18 @@ namespace mira
 		sync.fence.cpu_wait();
 
 		recycle_sync(receipt);
+	}
+
+	u32 RenderDevice_DX12::get_global_descriptor(BufferView view) const
+	{
+		const auto& res = try_get(m_buffer_views, get_slot(view.handle));
+		return res.view.index_offset_from_base();
+	}
+
+	u32 RenderDevice_DX12::get_global_descriptor(TextureView view) const
+	{
+		const auto& res = try_get(m_texture_views, get_slot(view.handle));
+		return res.view.index_offset_from_base();
 	}
 
 
