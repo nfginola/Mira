@@ -235,120 +235,120 @@ namespace mira
 
 		m_texture_views[get_slot(handle.handle)] = std::nullopt;
 	}
-
-	void RenderDevice_DX12::create_view(Buffer buffer, ViewType view, BufferView handle, u32 offset, u32 stride, u32 count, bool raw)
+	void RenderDevice_DX12::create_view(Buffer buffer, const BufferViewDesc& desc, BufferView handle)
 	{
-		assert(view != ViewType::None);
-		assert(view != ViewType::DepthStencil);
-		assert(view != ViewType::RenderTarget);
+		assert(desc.view != ViewType::None);
+		assert(desc.view != ViewType::DepthStencil);
+		assert(desc.view != ViewType::RenderTarget);
 
 		auto& buffer_storage = try_get(m_buffers, get_slot(buffer.handle));
-		auto desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		auto view_desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-		assert(offset + stride * count <= buffer_storage.desc.size);
+		assert(desc.offset + desc.stride * desc.count <= buffer_storage.desc.size);
 
-		if (view == ViewType::Constant)
+		if (desc.view == ViewType::Constant)
 		{
-			assert(stride % 256 == 0);
+			assert(desc.stride % 256 == 0);
 
 			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvd{};
 			cbvd.BufferLocation = buffer_storage.resource.Get()->GetGPUVirtualAddress();
-			cbvd.SizeInBytes = stride * count;
-			m_device->CreateConstantBufferView(&cbvd, desc.cpu_handle(0));
+			cbvd.SizeInBytes = desc.stride * desc.count;
+			m_device->CreateConstantBufferView(&cbvd, view_desc.cpu_handle(0));
 		}
-		else if (view == ViewType::ShaderResource)
+		else if (desc.view == ViewType::ShaderResource)
 		{
-			assert(offset % stride == 0);
+			assert(desc.offset % desc.stride == 0);
 
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{};
 			srvd.Format = DXGI_FORMAT_UNKNOWN;
 			srvd.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
 			srvd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			srvd.Buffer.FirstElement = offset / stride;
-			srvd.Buffer.NumElements = count;
-			srvd.Buffer.StructureByteStride = stride;
-			srvd.Buffer.Flags = raw ? D3D12_BUFFER_SRV_FLAG_RAW : D3D12_BUFFER_SRV_FLAG_NONE;
+			srvd.Buffer.FirstElement = desc.offset / desc.stride;
+			srvd.Buffer.NumElements = desc.count;
+			srvd.Buffer.StructureByteStride = desc.stride;
+			srvd.Buffer.Flags = desc.raw ? D3D12_BUFFER_SRV_FLAG_RAW : D3D12_BUFFER_SRV_FLAG_NONE;
 
-			m_device->CreateShaderResourceView(buffer_storage.resource.Get(), &srvd, desc.cpu_handle(0));
+			m_device->CreateShaderResourceView(buffer_storage.resource.Get(), &srvd, view_desc.cpu_handle(0));
 
 		}
-		else if (view == ViewType::UnorderedAccess)
+		else if (desc.view == ViewType::UnorderedAccess)
 		{
-			assert(offset % stride == 0);
+			assert(desc.offset % desc.stride == 0);
 
 			D3D12_UNORDERED_ACCESS_VIEW_DESC uavd{};
 			uavd.Format = DXGI_FORMAT_UNKNOWN;
 			uavd.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-			uavd.Buffer.FirstElement = offset / stride;
-			uavd.Buffer.NumElements = count;
-			uavd.Buffer.StructureByteStride = stride;
+			uavd.Buffer.FirstElement = desc.offset / desc.stride;
+			uavd.Buffer.NumElements = desc.count;
+			uavd.Buffer.StructureByteStride = desc.stride;
 			uavd.Buffer.CounterOffsetInBytes = 0;
-			uavd.Buffer.Flags = raw ? D3D12_BUFFER_UAV_FLAG_RAW : D3D12_BUFFER_UAV_FLAG_NONE;
+			uavd.Buffer.Flags = desc.raw ? D3D12_BUFFER_UAV_FLAG_RAW : D3D12_BUFFER_UAV_FLAG_NONE;
 
 			// We never use counter buffers, user has to create their own RW buffer with counters and do InterlockedAdd
 			// This makes counting explicit on the user side and simplifies API (always no counter)
-			m_device->CreateUnorderedAccessView(buffer_storage.resource.Get(), nullptr, &uavd, desc.cpu_handle(2));
+			m_device->CreateUnorderedAccessView(buffer_storage.resource.Get(), nullptr, &uavd, view_desc.cpu_handle(2));
 		}
-		else if (view == ViewType::RaytracingAS)
+		else if (desc.view == ViewType::RaytracingAS)
 		{
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{};
 			srvd.Format = DXGI_FORMAT_UNKNOWN;
 			srvd.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
 			srvd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			srvd.RaytracingAccelerationStructure.Location = offset;
+			srvd.RaytracingAccelerationStructure.Location = desc.offset;
 
-			m_device->CreateShaderResourceView(buffer_storage.resource.Get(), &srvd, desc.cpu_handle(0));
+			m_device->CreateShaderResourceView(buffer_storage.resource.Get(), &srvd, view_desc.cpu_handle(0));
 		}
 		else
 		{
 			assert(false);
 		}
 
-		try_insert(m_buffer_views, BufferView_Storage(buffer, view, desc), get_slot(handle.handle));
+		try_insert(m_buffer_views, BufferView_Storage(buffer, desc.view, view_desc), get_slot(handle.handle));
+
 	}
 
-	void RenderDevice_DX12::create_view(Texture texture, ViewType view, TextureView handle, TextureViewRange range)
+	void RenderDevice_DX12::create_view(Texture texture, const TextureViewDesc& desc, TextureView handle)
 	{
-		assert(view != ViewType::None);
-		assert(view != ViewType::Constant);
-		assert(view != ViewType::RaytracingAS);
-			
+		assert(desc.view != ViewType::None);
+		assert(desc.view != ViewType::Constant);
+		assert(desc.view != ViewType::RaytracingAS);
+
 		auto& tex_storage = try_get(m_textures, get_slot(texture.handle));
 
-		DX12DescriptorChunk desc;
-		if (view == ViewType::RenderTarget)
-			desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-		else if (view == ViewType::DepthStencil)
-			desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+		DX12DescriptorChunk view_desc;
+		if (desc.view == ViewType::RenderTarget)
+			view_desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		else if (desc.view == ViewType::DepthStencil)
+			view_desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 		else
-			desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+			view_desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-		if (view == ViewType::DepthStencil)
+		if (desc.view == ViewType::DepthStencil)
 		{
-			auto dsv = to_dsv(range);
-			m_device->CreateDepthStencilView(tex_storage.resource.Get(), &dsv, desc.cpu_handle(0));
+			auto dsv = to_dsv(desc.range);
+			m_device->CreateDepthStencilView(tex_storage.resource.Get(), &dsv, view_desc.cpu_handle(0));
 		}
-		else if (view == ViewType::RenderTarget)
+		else if (desc.view == ViewType::RenderTarget)
 		{
-			auto rtv = to_rtv(range);
-			m_device->CreateRenderTargetView(tex_storage.resource.Get(), &rtv, desc.cpu_handle(0));
+			auto rtv = to_rtv(desc.range);
+			m_device->CreateRenderTargetView(tex_storage.resource.Get(), &rtv, view_desc.cpu_handle(0));
 		}
-		else if (view == ViewType::ShaderResource)
+		else if (desc.view == ViewType::ShaderResource)
 		{
-			auto srv = to_srv(range);
-			m_device->CreateShaderResourceView(tex_storage.resource.Get(), &srv, desc.cpu_handle(0));
+			auto srv = to_srv(desc.range);
+			m_device->CreateShaderResourceView(tex_storage.resource.Get(), &srv, view_desc.cpu_handle(0));
 		}
-		else if (view == ViewType::UnorderedAccess)
+		else if (desc.view == ViewType::UnorderedAccess)
 		{
-			auto uav = to_uav(range);
-			m_device->CreateUnorderedAccessView(tex_storage.resource.Get(), nullptr, &uav, desc.cpu_handle(0));
+			auto uav = to_uav(desc.range);
+			m_device->CreateUnorderedAccessView(tex_storage.resource.Get(), nullptr, &uav, view_desc.cpu_handle(0));
 		}
 		else
 		{
 			assert(false);
 		}
 
-		try_insert(m_texture_views, TextureView_Storage(texture, view, desc), get_slot(handle.handle));
+		try_insert(m_texture_views, TextureView_Storage(texture, desc.view, view_desc), get_slot(handle.handle));
 	}
 	
 

@@ -25,16 +25,6 @@ namespace mira
 	};
 
 
-	enum class ViewType
-	{
-		None,
-		RenderTarget,			// RTV
-		DepthStencil,			// DSV
-		ShaderResource,			// SRV
-		RaytracingAS,			// SRV (Raytracing Acceleration Structure)
-		UnorderedAccess,		// UAV
-		Constant				// CBV
-	};
 	
 	enum class DepthFormat
 	{

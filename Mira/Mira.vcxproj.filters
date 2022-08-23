@@ -176,7 +176,7 @@
     <ClInclude Include="src\Handles\HandleAllocator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RHI\Types\ViewRangeTypes.h">
+    <ClInclude Include="src\RHI\Types\ViewTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

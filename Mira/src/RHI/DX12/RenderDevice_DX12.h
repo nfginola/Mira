@@ -34,8 +34,8 @@ namespace mira
 		void create_graphics_pipeline(const GraphicsPipelineDesc& desc, Pipeline handle);
 		void create_renderpass(const RenderPassDesc& desc, RenderPass handle);
 
-		void create_view(Buffer buffer, ViewType view, BufferView handle, u32 offset, u32 stride,  u32 count = 1, bool raw = false);
-		void create_view(Texture texture, ViewType view, TextureView handle, TextureViewRange range);
+		void create_view(Buffer buffer, const BufferViewDesc& desc, BufferView handle);
+		void create_view(Texture texture, const TextureViewDesc& desc, TextureView handle);
 		
 
 		// Sensitive resources that may be in-flight

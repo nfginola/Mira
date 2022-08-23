@@ -28,8 +28,24 @@ Application::Application()
 
 	// Create swapchain (requires at least 2 buffers)
 	mira::Texture bb_textures[]{ rhp.allocate<mira::Texture>(), rhp.allocate<mira::Texture>() };
-	mira::TextureView bb_rts[]{ rhp.allocate<mira::TextureView>(), rhp.allocate<mira::TextureView>() };
 	mira::SwapChain* sc = rd->create_swapchain(m_window->get_hwnd(), bb_textures);
+
+	// Create views and renderpasses for swapchain backbuffer
+	mira::TextureView bb_rts[]{ rhp.allocate<mira::TextureView>(), rhp.allocate<mira::TextureView>() };
+	mira::RenderPass bb_rps[2] = { rhp.allocate<mira::RenderPass>(), rhp.allocate<mira::RenderPass>() };
+	for (u32 i = 0; i < _countof(bb_rps); ++i)
+	{
+		rd->create_view(bb_textures[i],
+			mira::TextureViewDesc(
+				mira::ViewType::RenderTarget,
+				mira::TextureViewRange(mira::TextureViewDimension::Texture2D, mira::ResourceFormat::RGBA_8_UNORM)), 
+			bb_rts[i]);
+
+		rd->create_renderpass(mira::RenderPassBuilder()
+			.append_rt(bb_rts[i], mira::RenderPassBeginAccessType::Clear, mira::RenderPassEndingAccessType::Preserve)
+			.build(),
+			bb_rps[i]);
+	}
 
 	// Create fullscreen blit pipeline
 	auto blit_pipe = rhp.allocate<mira::Pipeline>();
@@ -43,19 +59,6 @@ Application::Application()
 			.append_rt_format(mira::ResourceFormat::RGBA_8_UNORM)
 			.build(),
 			blit_pipe);
-	}
-
-	// Create renderpasses for swapchain
-	mira::RenderPass bb_rps[2] = { rhp.allocate<mira::RenderPass>(), rhp.allocate<mira::RenderPass>() };
-	for (u32 i = 0; i < _countof(bb_rps); ++i)
-	{
-		auto range = mira::TextureViewRange(mira::TextureViewDimension::Texture2D, mira::ResourceFormat::RGBA_8_UNORM);
-		rd->create_view(bb_textures[i], mira::ViewType::RenderTarget, bb_rts[i], range);
-
-		rd->create_renderpass(mira::RenderPassBuilder()
-			.append_rt(bb_rts[i], mira::RenderPassBeginAccessType::Clear, mira::RenderPassEndingAccessType::Preserve)
-			.build(),
-			bb_rps[i]);
 	}
 
 	while (m_window->is_alive())
@@ -97,7 +100,6 @@ Application::Application()
 	}
 
 	rd->flush();
-	
 }
 
 void Application::run()
