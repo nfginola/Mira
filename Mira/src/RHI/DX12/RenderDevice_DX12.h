@@ -33,11 +33,9 @@ namespace mira
 		void create_texture(Texture handle, const TextureDesc& desc);
 		void create_graphics_pipeline(Pipeline handle, const GraphicsPipelineDesc& desc);
 		void create_renderpass(RenderPass handle, const RenderPassDesc& desc);
-
 		void create_view(BufferView handle, Buffer buffer, const BufferViewDesc& desc);
 		void create_view(TextureView handle, Texture texture, const TextureViewDesc& desc);
 		
-
 		// Sensitive resources that may be in-flight
 		void free_buffer(Buffer handle);
 		void free_texture(Texture handle);
@@ -58,6 +56,22 @@ namespace mira
 		u32 get_global_descriptor(BufferView view) const;
 		u32 get_global_descriptor(TextureView view) const;
 	
+
+
+		// Reserve metadata for command recording
+		void allocate_command_list(CommandList handle);
+
+		// Compile backend representation of the command list
+		void compile_command_list(CommandList handle, NewRenderCommandList list);
+
+		// Submit a compiled command list
+		void submit_command_lists2(
+			std::span<CommandList> lists,
+			QueueType queue = QueueType::Graphics,
+			std::optional<SyncReceipt> incoming_sync = std::nullopt,				// Synchronize with prior to command list execution
+			std::optional<SyncReceipt> outgoing_sync = std::nullopt);			// Generate sync after command list execution
+
+
 		RenderCommandList* allocate_command_list(QueueType queue = QueueType::Graphics);
 
 		void submit_command_lists(
@@ -150,10 +164,17 @@ namespace mira
 			D3D12_RENDER_PASS_FLAGS flags{};
 		};
 
+		struct CommandList_Storage
+		{
+			bool is_compiled{ false };
+
+		};
+
 		struct SyncPrimitive
 		{
 			DX12Fence fence;
 		};
+
 
 	private:
 		ComPtr<ID3D12Device5> m_device;
@@ -173,6 +194,7 @@ namespace mira
 		std::vector<std::optional<TextureView_Storage>> m_texture_views;
 		std::vector<std::optional<Pipeline_Storage>> m_pipelines;
 		std::vector<std::optional<RenderPass_Storage>> m_renderpasses;
+		std::vector<std::optional<CommandList_Storage>> m_command_lists;
 
 		std::vector<std::optional<SyncPrimitive>> m_syncs;		
 		std::queue<SyncPrimitive> m_recycled_syncs;

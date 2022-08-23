@@ -25,6 +25,7 @@ namespace mira
 		m_pipelines.resize(1);
 		m_renderpasses.resize(1);
 		m_syncs.resize(1);
+		m_command_lists.resize(1);
 
 		m_buffer_views.resize(1);
 		m_texture_views.resize(1);
@@ -513,13 +514,63 @@ namespace mira
 	u32 RenderDevice_DX12::get_global_descriptor(BufferView view) const
 	{
 		const auto& res = try_get(m_buffer_views, get_slot(view.handle));
-		return res.view.index_offset_from_base();
+		return (u32)res.view.index_offset_from_base();
 	}
 
 	u32 RenderDevice_DX12::get_global_descriptor(TextureView view) const
 	{
 		const auto& res = try_get(m_texture_views, get_slot(view.handle));
-		return res.view.index_offset_from_base();
+		return (u32)res.view.index_offset_from_base();
+	}
+
+	void RenderDevice_DX12::allocate_command_list(CommandList handle)
+	{
+		CommandList_Storage storage{};
+		
+		// allocate a compile context
+		// put into storage
+		assert(false);
+
+		try_insert(m_command_lists, storage, get_slot(handle.handle));
+	}
+
+	void RenderDevice_DX12::compile_command_list(CommandList handle, NewRenderCommandList list)
+	{	
+		auto& res = try_get(m_command_lists, get_slot(handle.handle));
+	
+		// record list with API functions
+		/*
+			for each command in list:
+				res.compile_ctx->compile(command);
+		*/
+
+		res.is_compiled = true;
+
+		assert(false);
+	}
+
+	void RenderDevice_DX12::submit_command_lists2(std::span<CommandList> lists, QueueType queue, std::optional<SyncReceipt> incoming_sync, std::optional<SyncReceipt> outgoing_sync)
+	{
+		// verify that the submitted lists are compiled
+		ID3D12CommandList* cmdls[16];
+		for (u32 i = 0; i < lists.size(); ++i)
+		{
+			const auto& storage = try_get(m_command_lists, get_slot(lists[i].handle));
+			assert(storage.is_compiled);
+
+			// gather all the underlying command lists for submission
+			// cmdls[i] = storage.____
+		}
+
+		// grab queue depending on queue type
+		
+		// submit incoming sync
+
+		// submit the lists with single call
+
+		// generate outgoing sync
+
+		assert(false);
 	}
 
 

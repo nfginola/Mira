@@ -12,6 +12,58 @@
 
 Application::Application()
 {
+	{
+		// Testing
+		mira::NewRenderCommandList list;
+		mira::RenderCommandDraw cmd{};
+		cmd.instance_count = 1;
+		cmd.instance_start = 0;
+		cmd.verts_per_instance = 3213;
+		cmd.vert_start = 123123;
+		list.submit(cmd);
+
+		for (const auto* cmd : list.m_cmds)
+		{
+			switch (cmd->CMD_TYPE)
+			{
+			case mira::RenderCommandType::Draw:
+			{
+				auto thing = static_cast<const mira::RenderCommandDraw*>(cmd);
+
+				break;
+			}
+			default:
+				assert(false);
+			}
+		}
+
+		assert(false);
+
+		//for (const auto* cmd : list.m_cmds)
+		//{
+		//	switch (cmd->type)
+		//	{
+		//	case mira::RenderCommandDraw::s_cmd:
+		//	{
+		//		auto thing = *static_cast<const mira::RenderCommandDraw*>(cmd);
+
+		//		OutputDebugStringW(L"Lol\n");
+
+		//		break;
+		//	}
+		//	default:
+		//		assert(false);
+		//	}
+		//}
+
+
+
+
+	}
+
+
+
+
 	const UINT c_width = 1600;
 	const UINT c_height = 900;
 
@@ -32,7 +84,7 @@ Application::Application()
 
 	// Create views and renderpasses for swapchain backbuffer
 	mira::TextureView bb_rts[]{ rhp.allocate<mira::TextureView>(), rhp.allocate<mira::TextureView>() };
-	mira::RenderPass bb_rps[] = { rhp.allocate<mira::RenderPass>(), rhp.allocate<mira::RenderPass>() };
+	mira::RenderPass bb_rps[]{ rhp.allocate<mira::RenderPass>(), rhp.allocate<mira::RenderPass>() };
 	for (u32 i = 0; i < _countof(bb_rps); ++i)
 	{
 		rd->create_view(bb_rts[i], bb_textures[i],
