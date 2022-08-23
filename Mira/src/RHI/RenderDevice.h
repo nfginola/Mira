@@ -30,10 +30,12 @@ namespace mira
 		// Copies to a host-visible buffer
 		virtual void upload_to_buffer(Buffer buffer, u32 dst_offset, void* data, u32 size) = 0;
 
-		// Replace this with a mira::ResourceView that is passed like all others.
-		// no internally generated handles
-		// keep it global 
-		virtual u32 create_view(Buffer buffer, ViewType view, u32 offset, u32 stride, u32 count = 1, bool raw = false) = 0;
+		virtual void create_view(Buffer buffer, ViewType view, BufferView handle, u32 offset, u32 stride, u32 count = 1, bool raw = false) = 0;
+		virtual void create_view(Texture texture, ViewType view, TextureView handle, TextureViewRange range) = 0;
+
+		virtual void free_view(BufferView handle) = 0;
+		virtual void free_view(TextureView handle) = 0;
+
 		
 		// Grab GPU-accessible resource handle
 		virtual u32 get_global_descriptor(Buffer buffer, u32 view) const = 0;

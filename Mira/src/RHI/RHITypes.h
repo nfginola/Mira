@@ -7,6 +7,7 @@
 #include "Types/RenderPassTypes.h"
 #include "Types/BarrierTypes.h"
 #include "Types/RenderPassTypes.h"
+#include "Types/ViewRangeTypes.h"
 
 namespace mira
 {

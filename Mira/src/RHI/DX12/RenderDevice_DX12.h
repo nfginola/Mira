@@ -34,18 +34,17 @@ namespace mira
 		void create_graphics_pipeline(const GraphicsPipelineDesc& desc, Pipeline handle);
 		void create_renderpass(const RenderPassDesc& desc, RenderPass handle);
 
-
-		u32 create_view(Buffer buffer, ViewType view, u32 offset, u32 stride, u32 count = 1, bool raw = false);
-
-
-		// Need to give full range of options (unpack enums for Texture views)
-		//u32 create_view(Texture texture)
+		void create_view(Buffer buffer, ViewType view, BufferView handle, u32 offset, u32 stride,  u32 count = 1, bool raw = false);
+		void create_view(Texture texture, ViewType view, TextureView handle, TextureViewRange range);
+		
 
 		// Sensitive resources that may be in-flight
 		void free_buffer(Buffer handle);
 		void free_texture(Texture handle);
 		void free_pipeline(Pipeline handle);
 		void free_renderpass(RenderPass handle);
+		void free_view(BufferView handle);
+		void free_view(TextureView handle);
 
 
 		void recycle_sync(SyncReceipt receipt);
@@ -102,19 +101,28 @@ namespace mira
 
 
 	private:
-		struct ResourceView_Storage
+		struct TextureView_Storage
 		{
+			Texture tex;
 			ViewType type{ ViewType::None };
 			DX12DescriptorChunk view;
 
-			ResourceView_Storage(ViewType type_in, const DX12DescriptorChunk& descriptor) : type(type_in), view(descriptor) {}
+			TextureView_Storage(Texture tex_in, ViewType type_in, const DX12DescriptorChunk& descriptor) : tex(tex_in), type(type_in), view(descriptor) {}
+		};
+
+		struct BufferView_Storage
+		{
+			Buffer buf;
+			ViewType type{ ViewType::None };
+			DX12DescriptorChunk view;
+
+			BufferView_Storage(Buffer buf_in, ViewType type_in, const DX12DescriptorChunk& descriptor) : buf(buf_in), type(type_in), view(descriptor) {}
 		};
 
 		struct GPUResource_Storage
 		{
 			ComPtr<D3D12MA::Allocation> alloc;
 			ComPtr<ID3D12Resource> resource;
-			std::vector<ResourceView_Storage> views;
 		};
 
 		struct Buffer_Storage : public GPUResource_Storage
@@ -143,6 +151,11 @@ namespace mira
 			D3D12_RENDER_PASS_FLAGS flags{};
 		};
 
+		struct SyncPrimitive
+		{
+			DX12Fence fence;
+		};
+
 	private:
 		ComPtr<ID3D12Device5> m_device;
 		bool m_debug_on{ false };
@@ -152,33 +165,22 @@ namespace mira
 		ComPtr<ID3D12RootSignature> m_common_rsig;
 		std::unique_ptr<DX12DescriptorManager> m_descriptor_mgr;
 
-
-		// Reuse existing fences
-		struct SyncPrimitive
-		{
-			DX12Fence fence;
-		};
-		std::queue<SyncPrimitive> m_sync_pool;
-		std::vector<std::optional<SyncPrimitive>> m_syncs_in_play;
-		std::queue<u32> m_reusable_sync_slots;
-
-
-		// Resource storage
+		/*
+			Resources
+		*/
 		std::vector<std::optional<Buffer_Storage>> m_buffers;
 		std::vector<std::optional<Texture_Storage>> m_textures;
+		std::vector<std::optional<BufferView_Storage>> m_buffer_views;
+		std::vector<std::optional<TextureView_Storage>> m_texture_views;
 		std::vector<std::optional<Pipeline_Storage>> m_pipelines;
 		std::vector<std::optional<RenderPass_Storage>> m_renderpasses;
-		//std::vector<std::optional<ResourceView_Storage>> m_views;			// to-do
 
-		std::vector<std::optional<SyncPrimitive>> m_syncs;				// to-do
+		std::vector<std::optional<SyncPrimitive>> m_syncs;		
 		std::queue<SyncPrimitive> m_recycled_syncs;
+
 
 		// Important that this is destructed before resources and descriptor managers (need to free underlying texture)
 		std::unique_ptr<SwapChain_DX12> m_swapchain;
-
-
-
-
 
 
 		// Reuse existing command allocators

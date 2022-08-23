@@ -28,6 +28,7 @@ Application::Application()
 
 	// Create swapchain (requires at least 2 buffers)
 	mira::Texture bb_textures[]{ rhp.allocate<mira::Texture>(), rhp.allocate<mira::Texture>() };
+	mira::TextureView bb_rts[]{ rhp.allocate<mira::TextureView>(), rhp.allocate<mira::TextureView>() };
 	mira::SwapChain* sc = rd->create_swapchain(m_window->get_hwnd(), bb_textures);
 
 	// Create fullscreen blit pipeline
@@ -48,34 +49,14 @@ Application::Application()
 	mira::RenderPass bb_rps[2] = { rhp.allocate<mira::RenderPass>(), rhp.allocate<mira::RenderPass>() };
 	for (u32 i = 0; i < _countof(bb_rps); ++i)
 	{
-		/*
-			we should change append_rt to take a TextureView instead.
-
-			Its like we're baking in a Framebuffer here (array of image views)
-		*/
+		auto range = mira::TextureViewRange(mira::TextureViewDimension::Texture2D, mira::ResourceFormat::RGBA_8_UNORM);
+		rd->create_view(bb_textures[i], mira::ViewType::RenderTarget, bb_rts[i], range);
 
 		rd->create_renderpass(mira::RenderPassBuilder()
-			.append_rt(bb_textures[i], 0, mira::RenderPassBeginAccessType::Clear, mira::RenderPassEndingAccessType::Preserve)
+			.append_rt(bb_rts[i], mira::RenderPassBeginAccessType::Clear, mira::RenderPassEndingAccessType::Preserve)
 			.build(),
 			bb_rps[i]);
 	}
-
-	// view testing
-	{
-		auto buf = rhp.allocate<mira::Buffer>();
-		mira::BufferDesc bdesc{};
-		bdesc.size = 512;
-		bdesc.memory_type = mira::MemoryType::Upload;
-		rd->create_buffer(bdesc, buf);
-
-		auto v1 = rd->create_view(buf, mira::ViewType::Constant, 0, 256);
-		auto v2 = rd->create_view(buf, mira::ViewType::Constant, 256, 256);
-
-		auto handle = rd->get_global_descriptor(buf, v2);
-
-		rd->free_buffer(buf);
-	}
-
 
 	while (m_window->is_alive())
 	{
@@ -120,6 +101,9 @@ Application::Application()
 	}
 
 	rd->flush();
+	
+	for (u32 i = 0; i < _countof(bb_rts); ++i)
+		rd->free_view(bb_rts[i]);
 }
 
 void Application::run()

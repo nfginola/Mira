@@ -20,8 +20,7 @@ namespace mira
 
 	struct RenderPassTargetDesc
 	{
-		Texture texture;
-		u32 view{ 0 };
+		TextureView view;
 		RenderPassBeginAccessType begin_access;
 		RenderPassEndingAccessType end_access;
 
@@ -30,8 +29,7 @@ namespace mira
 
 	struct RenderPassDepthStencilTargetDesc
 	{
-		Texture texture;
-		u32 view{ 0 };
+		TextureView view;
 		RenderPassBeginAccessType begin_depth_access;
 		RenderPassEndingAccessType end_depth_access;
 		RenderPassBeginAccessType begin_stencil_access;
@@ -56,13 +54,12 @@ namespace mira
 	public:
 
 		RenderPassBuilder& append_rt(
-			Texture texture,
-			u32 view,
+			TextureView view,
 			RenderPassBeginAccessType begin_access, 
 			RenderPassEndingAccessType ending_access)
 		{
 			RenderPassTargetDesc desc{};
-			desc.texture = texture;
+			desc.view = view;
 			desc.begin_access = begin_access;
 			desc.end_access = ending_access;
 			desc.view = view;
@@ -72,25 +69,22 @@ namespace mira
 
 		// Conveniece API if the user only cares about using depth
 		RenderPassBuilder& add_depth(
-			Texture texture,
-			u32 view,
+			TextureView view,
 			RenderPassBeginAccessType depth_begin,
 			RenderPassEndingAccessType depth_end)
 		{
-			add_depth_stencil(texture, view, depth_begin, depth_end, RenderPassBeginAccessType::Discard, RenderPassEndingAccessType::Discard);
+			add_depth_stencil(view, depth_begin, depth_end, RenderPassBeginAccessType::Discard, RenderPassEndingAccessType::Discard);
 			return *this;
 		}
 
 		RenderPassBuilder& add_depth_stencil(
-			Texture texture,
-			u32 view,
+			TextureView view,
 			RenderPassBeginAccessType depth_begin,
 			RenderPassEndingAccessType depth_end,
 			RenderPassBeginAccessType stencil_begin,
 			RenderPassEndingAccessType stencil_end)
 		{
 			m_rp_desc.depth_stencil_desc = RenderPassDepthStencilTargetDesc{};
-			m_rp_desc.depth_stencil_desc->texture = texture;
 			m_rp_desc.depth_stencil_desc->view = view;
 			m_rp_desc.depth_stencil_desc->begin_depth_access = depth_begin;
 			m_rp_desc.depth_stencil_desc->end_depth_access = depth_end;

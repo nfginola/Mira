@@ -461,10 +461,8 @@ namespace mira
 		switch (type)
 		{
 			case TextureType::Texture1D:
-			case TextureType::Texture1D_Array:
 				return D3D12_RESOURCE_DIMENSION_TEXTURE1D;
 			case TextureType::Texture2D:
-			case TextureType::Texture2D_Array:
 				return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 			case TextureType::Texture3D:
 				return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
@@ -473,58 +471,89 @@ namespace mira
 		}
 	}
 
-	D3D12_RTV_DIMENSION to_internal_rtv(TextureType type)
+	D3D12_RTV_DIMENSION to_internal_rtv(TextureViewDimension type)
 	{
 		switch (type)
 		{
-		case TextureType::Texture1D:
+		case TextureViewDimension::Texture1D:
 			return D3D12_RTV_DIMENSION_TEXTURE1D;
-		case TextureType::Texture1D_Array:
+		case TextureViewDimension::Texture1D_Array:
 			return D3D12_RTV_DIMENSION_TEXTURE1DARRAY;
-		case TextureType::Texture2D:
+		case TextureViewDimension::Texture2D:
 			return D3D12_RTV_DIMENSION_TEXTURE2D;
-		case TextureType::Texture2D_Array:
+		case TextureViewDimension::Texture2D_MS:
+			return D3D12_RTV_DIMENSION_TEXTURE2DMS;
+		case TextureViewDimension::Texture2D_MS_Array:
+			return D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY;
+		case TextureViewDimension::Texture2D_Array:
 			return D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
-		case TextureType::Texture3D:
+		case TextureViewDimension::Texture3D:
 			return D3D12_RTV_DIMENSION_TEXTURE3D;
 		default:
 			return D3D12_RTV_DIMENSION_UNKNOWN;
 		}
 	}
 
-	D3D12_DSV_DIMENSION to_internal_dsv(TextureType type)
+	D3D12_DSV_DIMENSION to_internal_dsv(TextureViewDimension type)
 	{
 		switch (type)
 		{
-		case TextureType::Texture1D:
+		case TextureViewDimension::Texture1D:
 			return D3D12_DSV_DIMENSION_TEXTURE1D;
-		case TextureType::Texture1D_Array:
+		case TextureViewDimension::Texture1D_Array:
 			return D3D12_DSV_DIMENSION_TEXTURE1DARRAY;
-		case TextureType::Texture2D:
+		case TextureViewDimension::Texture2D:
 			return D3D12_DSV_DIMENSION_TEXTURE2D;
-		case TextureType::Texture2D_Array:
+		case TextureViewDimension::Texture2D_Array:
 			return D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+		case TextureViewDimension::Texture2D_MS:
+			return D3D12_DSV_DIMENSION_TEXTURE2DMS;
+		case TextureViewDimension::Texture2D_MS_Array:
+			return D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY;
 		default:
 			return D3D12_DSV_DIMENSION_UNKNOWN;
 		}
 	}
 
-	D3D12_SRV_DIMENSION to_internal_srv(TextureType type)
+	D3D12_SRV_DIMENSION to_internal_srv(TextureViewDimension type)
 	{
 		switch (type)
 		{
-		case TextureType::Texture1D:
+		case TextureViewDimension::Texture1D:
 			return D3D12_SRV_DIMENSION_TEXTURE1D;
-		case TextureType::Texture1D_Array:
+		case TextureViewDimension::Texture1D_Array:
 			return D3D12_SRV_DIMENSION_TEXTURE1DARRAY;
-		case TextureType::Texture2D:
+		case TextureViewDimension::Texture2D:
 			return D3D12_SRV_DIMENSION_TEXTURE2D;
-		case TextureType::Texture2D_Array:
+		case TextureViewDimension::Texture2D_Array:
 			return D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-		case TextureType::Texture3D:
+		case TextureViewDimension::Texture3D:
 			return D3D12_SRV_DIMENSION_TEXTURE3D;
+		case TextureViewDimension::TextureCube:
+			return D3D12_SRV_DIMENSION_TEXTURECUBE;
+		case TextureViewDimension::TextureCube_Array:
+			return D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
 		default:
 			return D3D12_SRV_DIMENSION_UNKNOWN;
+		}
+	}
+
+	D3D12_UAV_DIMENSION to_internal_uav(TextureViewDimension type)
+	{
+		switch (type)
+		{
+		case TextureViewDimension::Texture1D:
+			return D3D12_UAV_DIMENSION_TEXTURE1D;
+		case TextureViewDimension::Texture1D_Array:
+			return D3D12_UAV_DIMENSION_TEXTURE1DARRAY;
+		case TextureViewDimension::Texture2D:
+			return D3D12_UAV_DIMENSION_TEXTURE2D;
+		case TextureViewDimension::Texture2D_Array:
+			return D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+		case TextureViewDimension::Texture3D:
+			return D3D12_UAV_DIMENSION_TEXTURE3D;
+		default:
+			return D3D12_UAV_DIMENSION_UNKNOWN;
 		}
 	}
 
@@ -634,6 +663,300 @@ namespace mira
 			default:
 				return D3D12_RESOURCE_STATE_COMMON;
 		}
+	}
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC to_srv(const TextureViewRange& range)
+	{
+		D3D12_SHADER_RESOURCE_VIEW_DESC desc{};
+		desc.Format = to_internal(range.format);
+		desc.ViewDimension = to_internal_srv(range.dimension);
+		desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		switch (range.dimension)
+		{
+		case TextureViewDimension::Texture1D:
+		{
+			desc.Texture1D.MostDetailedMip = range.base_mip_level;
+			desc.Texture1D.MipLevels = range.mip_levels;
+			desc.Texture1D.ResourceMinLODClamp = range.min_lod_clamp;
+			break;
+		}
+		case TextureViewDimension::Texture1D_Array:
+		{
+			desc.Texture1DArray.MostDetailedMip = range.base_mip_level;
+			desc.Texture1DArray.MipLevels = range.mip_levels;
+			desc.Texture1DArray.ResourceMinLODClamp = range.min_lod_clamp;
+
+			desc.Texture1DArray.ArraySize = range.array_count;
+			desc.Texture1DArray.FirstArraySlice = range.array_base;		
+			break;
+		}
+		case TextureViewDimension::Texture2D:
+		{
+			desc.Texture2D.MostDetailedMip = range.base_mip_level;
+			desc.Texture2D.MipLevels = range.mip_levels;
+			desc.Texture2D.ResourceMinLODClamp = range.min_lod_clamp;
+
+			desc.Texture2D.PlaneSlice = range.array_base;
+			assert(range.array_count == 1);
+
+			break;
+		}
+		case TextureViewDimension::Texture2D_Array:
+		{
+			desc.Texture2DArray.MostDetailedMip = range.base_mip_level;
+			desc.Texture2DArray.MipLevels = range.mip_levels;
+			desc.Texture2DArray.ResourceMinLODClamp = range.min_lod_clamp;
+
+			desc.Texture2DArray.ArraySize = range.array_count;
+			desc.Texture2DArray.FirstArraySlice = range.array_base;
+			desc.Texture2DArray.PlaneSlice = 0;
+
+			break;
+		}
+		case TextureViewDimension::Texture2D_MS:
+		{
+			desc.Texture2DMS.UnusedField_NothingToDefine = 0;
+			break;
+		}
+		case TextureViewDimension::Texture2D_MS_Array:
+		{
+			desc.Texture2DMSArray.FirstArraySlice = range.array_base;
+			desc.Texture2DMSArray.ArraySize = range.array_count;
+
+			break;
+		}
+		case TextureViewDimension::Texture3D:
+		{
+			desc.Texture3D.MostDetailedMip = range.base_mip_level;
+			desc.Texture3D.MipLevels = range.mip_levels;
+			desc.Texture3D.ResourceMinLODClamp = range.min_lod_clamp;
+
+			break;
+		}
+		case TextureViewDimension::TextureCube:
+		{
+			desc.TextureCube.MostDetailedMip = range.base_mip_level;
+			desc.TextureCube.MipLevels = range.mip_levels;
+			desc.TextureCube.ResourceMinLODClamp = range.min_lod_clamp;
+			break;
+		}
+		case TextureViewDimension::TextureCube_Array:
+		{
+			desc.TextureCubeArray.MostDetailedMip = range.base_mip_level;
+			desc.TextureCubeArray.MipLevels = range.mip_levels;
+			desc.TextureCubeArray.ResourceMinLODClamp = range.min_lod_clamp;
+
+			// https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkImageSubresourceRange.html
+			// Above is the only doc I can find for what "First2DArrayFace" means in D12 ...
+			desc.TextureCubeArray.NumCubes = range.array_count;
+			desc.TextureCubeArray.First2DArrayFace = range.array_base;		// Represent base WITHIN a texture cube! (array_base + i): where i % 6
+
+			break;
+		}
+		default:
+			assert(false);
+		}
+
+		return desc;
+	}
+
+	D3D12_RENDER_TARGET_VIEW_DESC to_rtv(const TextureViewRange& range)
+	{
+		D3D12_RENDER_TARGET_VIEW_DESC desc{};
+		desc.Format = to_internal(range.format);
+		desc.ViewDimension = to_internal_rtv(range.dimension);
+		switch (range.dimension)
+		{
+		case TextureViewDimension::Texture1D:
+		{
+			desc.Texture1D.MipSlice = range.array_base;
+
+			assert(range.array_count == 1);
+			break;
+		}
+		case TextureViewDimension::Texture1D_Array:
+		{
+			desc.Texture1DArray.FirstArraySlice = range.array_base;
+			desc.Texture1DArray.ArraySize = range.array_count;
+			desc.Texture1DArray.MipSlice = range.base_mip_level;
+			assert(range.mip_levels == 1);
+
+			break;
+		}
+		case TextureViewDimension::Texture2D:
+		{
+			desc.Texture2D.MipSlice = range.array_base;
+			desc.Texture2D.PlaneSlice = 0;
+
+			assert(range.array_count == 1);
+			break;
+		}
+		case TextureViewDimension::Texture2D_Array:
+		{
+			desc.Texture2DArray.FirstArraySlice = range.array_base;
+			desc.Texture2DArray.ArraySize = range.array_count;
+			desc.Texture2DArray.MipSlice = range.base_mip_level;
+
+			desc.Texture2DArray.PlaneSlice = 0;
+
+			assert(range.mip_levels == 1);
+
+			break;
+		}
+		case TextureViewDimension::Texture2D_MS:
+		{
+			desc.Texture2DMS.UnusedField_NothingToDefine = 0;
+			break;
+		}
+		case TextureViewDimension::Texture2D_MS_Array:
+		{
+			desc.Texture2DMSArray.FirstArraySlice = range.array_base;
+			desc.Texture2DMSArray.ArraySize = range.array_count;
+			break;
+		}
+		case TextureViewDimension::Texture3D:
+		{
+			desc.Texture3D.MipSlice = range.base_mip_level;
+
+			desc.Texture3D.FirstWSlice = range.array_base;
+			desc.Texture3D.WSize = range.array_count;
+
+			assert(range.mip_levels == 1);
+
+			break;
+		}
+		default:
+			assert(false);
+		}
+
+		return desc;
+	}
+
+	D3D12_DEPTH_STENCIL_VIEW_DESC to_dsv(const TextureViewRange& range)
+	{
+		D3D12_DEPTH_STENCIL_VIEW_DESC desc{};
+		desc.Format = to_internal(range.format);
+		desc.ViewDimension = to_internal_dsv(range.dimension);
+		desc.Flags = D3D12_DSV_FLAG_NONE;
+		if (range.depth_read_only)
+			desc.Flags |= D3D12_DSV_FLAG_READ_ONLY_DEPTH;
+		if (range.stencil_read_only)
+			desc.Flags |= D3D12_DSV_FLAG_READ_ONLY_STENCIL;
+
+		switch (range.dimension)
+		{
+		case TextureViewDimension::Texture1D:
+		{
+			desc.Texture1D.MipSlice = range.base_mip_level;
+			
+			assert(range.mip_levels == 1);
+
+			break;
+		}
+		case TextureViewDimension::Texture1D_Array:
+		{
+			desc.Texture1DArray.MipSlice = range.base_mip_level;
+			desc.Texture1DArray.FirstArraySlice = range.array_base;
+			desc.Texture1DArray.ArraySize = range.array_count;
+
+			assert(range.mip_levels == 1);
+
+			break;
+		}
+		case TextureViewDimension::Texture2D:
+		{
+			desc.Texture2D.MipSlice = range.base_mip_level;
+
+			assert(range.mip_levels == 1);
+
+			break;
+		}
+		case TextureViewDimension::Texture2D_Array:
+		{
+			desc.Texture2DArray.MipSlice = range.base_mip_level;
+			desc.Texture2DArray.FirstArraySlice = range.array_base;
+			desc.Texture2DArray.ArraySize = range.array_count;
+
+			assert(range.mip_levels == 1);
+
+			break;
+		}
+		case TextureViewDimension::Texture2D_MS:
+		{
+			desc.Texture2DMS.UnusedField_NothingToDefine = 0;
+
+			break;
+		}
+		case TextureViewDimension::Texture2D_MS_Array:
+		{
+			desc.Texture2DMSArray.FirstArraySlice = range.array_base;
+			desc.Texture2DMSArray.ArraySize = range.array_count;
+			break;
+		}
+			
+		default:
+			assert(false);
+		}
+
+		return desc;
+	}
+
+	D3D12_UNORDERED_ACCESS_VIEW_DESC to_uav(const TextureViewRange& range)
+	{
+		D3D12_UNORDERED_ACCESS_VIEW_DESC desc{};
+		desc.Format = to_internal(range.format);
+		desc.ViewDimension = to_internal_uav(range.dimension);
+
+		assert(range.mip_levels == 1);
+
+		switch (range.dimension)
+		{
+		case TextureViewDimension::Texture1D:
+		{
+			desc.Texture1D.MipSlice = range.base_mip_level;
+
+			break;
+		}
+		case TextureViewDimension::Texture1D_Array:
+		{
+			desc.Texture1DArray.MipSlice = range.base_mip_level;
+			desc.Texture1DArray.FirstArraySlice = range.array_base;
+			desc.Texture1DArray.ArraySize = range.array_count;
+
+
+			break;
+		}
+		case TextureViewDimension::Texture2D:
+		{
+			desc.Texture2D.MipSlice = range.base_mip_level;
+			desc.Texture2D.PlaneSlice = 0;
+
+			break;
+		}
+		case TextureViewDimension::Texture2D_Array:
+		{
+			desc.Texture2DArray.FirstArraySlice = range.array_base;
+			desc.Texture2DArray.ArraySize = range.array_count;
+
+			desc.Texture2DArray.MipSlice = range.base_mip_level;
+			desc.Texture2DArray.PlaneSlice = 0;
+
+
+			break;
+		}
+		case TextureViewDimension::Texture3D:
+		{
+			desc.Texture3D.MipSlice = range.base_mip_level;
+			desc.Texture3D.FirstWSlice = range.array_base;
+			desc.Texture3D.WSize = range.array_count;
+
+			break;
+		}
+		default:
+			assert(false);
+		}
+
+		return desc;
 	}
 
 }

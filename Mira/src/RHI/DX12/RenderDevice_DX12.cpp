@@ -26,7 +26,8 @@ namespace mira
 		m_renderpasses.resize(1);
 		m_syncs.resize(1);
 
-		m_syncs_in_play.resize(1);
+		m_buffer_views.resize(1);
+		m_texture_views.resize(1);
 
 		create_queues();
 		init_dma(adapter);
@@ -150,17 +151,18 @@ namespace mira
 		auto& descs = storage.render_targets;
 		for (const auto& rtd : desc.render_target_descs)
 		{
-			auto& res = try_get(m_textures, get_slot(rtd.texture.handle));
+			auto& res = try_get(m_texture_views, get_slot(rtd.view.handle));		// grab view md
 
 			auto api = to_internal(rtd);
-			assert(res.views[rtd.view].type == ViewType::RenderTarget);
-			api.cpuDescriptor = res.views[rtd.view].view.cpu_handle(0);
+			assert(res.type == ViewType::RenderTarget);
+			api.cpuDescriptor = res.view.cpu_handle(0);
 
-			api.BeginningAccess.Clear.ClearValue.Format = to_internal(res.desc.format);
-			api.BeginningAccess.Clear.ClearValue.Color[0] = res.desc.clear_color[0];
-			api.BeginningAccess.Clear.ClearValue.Color[1] = res.desc.clear_color[1];
-			api.BeginningAccess.Clear.ClearValue.Color[2] = res.desc.clear_color[2];
-			api.BeginningAccess.Clear.ClearValue.Color[3] = res.desc.clear_color[3];
+			auto& tex = try_get(m_textures, get_slot(res.tex.handle));				// grab underlying texture md
+			api.BeginningAccess.Clear.ClearValue.Format = to_internal(tex.desc.format);
+			api.BeginningAccess.Clear.ClearValue.Color[0] = tex.desc.clear_color[0];
+			api.BeginningAccess.Clear.ClearValue.Color[1] = tex.desc.clear_color[1];
+			api.BeginningAccess.Clear.ClearValue.Color[2] = tex.desc.clear_color[2];
+			api.BeginningAccess.Clear.ClearValue.Color[3] = tex.desc.clear_color[3];
 
 			// not supporting resolves for now
 			descs.push_back(api);
@@ -169,11 +171,10 @@ namespace mira
 		// Translate depth stencil 
 		if (desc.depth_stencil_desc.has_value())
 		{
-
-			auto& res = try_get(m_textures, get_slot(desc.depth_stencil_desc->texture.handle));
+			auto& res = try_get(m_texture_views, get_slot(desc.depth_stencil_desc->view.handle));
 			auto depth_api = to_internal(*desc.depth_stencil_desc);
-			assert(res.views[desc.depth_stencil_desc->view].type == ViewType::DepthStencil);
-			depth_api.cpuDescriptor = res.views[desc.depth_stencil_desc->view].view.cpu_handle(0);
+			assert(res.type == ViewType::DepthStencil);
+			depth_api.cpuDescriptor = res.view.cpu_handle(0);
 			storage.depth_stencil = depth_api;
 		}
 
@@ -183,10 +184,6 @@ namespace mira
 	void RenderDevice_DX12::free_buffer(Buffer handle)
 	{
 		auto& res = try_get(m_buffers, get_slot(handle.handle));
-
-		// clear views
-		for (auto view : res.views)
-			m_descriptor_mgr->free(&view.view);
 		
 		m_buffers[get_slot(handle.handle)] = std::nullopt;
 	}
@@ -194,9 +191,6 @@ namespace mira
 	void RenderDevice_DX12::free_texture(Texture handle)
 	{
 		auto& res = try_get(m_textures, get_slot(handle.handle));
-
-		for (auto view : res.views)
-			m_descriptor_mgr->free(&view.view);
 
 		m_textures[get_slot(handle.handle)] = std::nullopt;
 	}
@@ -211,31 +205,40 @@ namespace mira
 		m_renderpasses[get_slot(handle.handle)] = std::nullopt;
 	}
 
-	u32 RenderDevice_DX12::create_view(Buffer buffer, ViewType view, u32 offset, u32 stride, u32 count, bool raw)
+	void RenderDevice_DX12::free_view(BufferView handle)
+	{
+		auto& res = try_get(m_buffer_views, get_slot(handle.handle));
+		m_descriptor_mgr->free(&res.view);
+	}
+
+	void RenderDevice_DX12::free_view(TextureView handle)
+	{
+		auto& res = try_get(m_texture_views, get_slot(handle.handle));
+		m_descriptor_mgr->free(&res.view);
+	}
+
+	void RenderDevice_DX12::create_view(Buffer buffer, ViewType view, BufferView handle, u32 offset, u32 stride, u32 count, bool raw)
 	{
 		assert(view != ViewType::None);
 		assert(view != ViewType::DepthStencil);
 		assert(view != ViewType::RenderTarget);
 
-		auto& storage = try_get(m_buffers, get_slot(buffer.handle));
+		auto& buffer_storage = try_get(m_buffers, get_slot(buffer.handle));
 		auto desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-		assert(offset + stride * count <= storage.desc.size);
+		assert(offset + stride * count <= buffer_storage.desc.size);
 
 		if (view == ViewType::Constant)
 		{
 			assert(stride % 256 == 0);
 
 			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvd{};
-			cbvd.BufferLocation = storage.resource.Get()->GetGPUVirtualAddress();
+			cbvd.BufferLocation = buffer_storage.resource.Get()->GetGPUVirtualAddress();
 			cbvd.SizeInBytes = stride * count;
 			m_device->CreateConstantBufferView(&cbvd, desc.cpu_handle(0));
-
-			storage.views.push_back(ResourceView_Storage(view, desc));
-			return (u32)storage.views.size() - 1;
 		}
 		else if (view == ViewType::ShaderResource)
-		{	
+		{
 			assert(offset % stride == 0);
 
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{};
@@ -247,10 +250,8 @@ namespace mira
 			srvd.Buffer.StructureByteStride = stride;
 			srvd.Buffer.Flags = raw ? D3D12_BUFFER_SRV_FLAG_RAW : D3D12_BUFFER_SRV_FLAG_NONE;
 
-			m_device->CreateShaderResourceView(storage.resource.Get(), &srvd, desc.cpu_handle(0));
+			m_device->CreateShaderResourceView(buffer_storage.resource.Get(), &srvd, desc.cpu_handle(0));
 
-			storage.views.push_back(ResourceView_Storage(view, desc));
-			return (u32)storage.views.size() - 1;
 		}
 		else if (view == ViewType::UnorderedAccess)
 		{
@@ -267,27 +268,81 @@ namespace mira
 
 			// We never use counter buffers, user has to create their own RW buffer with counters and do InterlockedAdd
 			// This makes counting explicit on the user side and simplifies API (always no counter)
-			m_device->CreateUnorderedAccessView(storage.resource.Get(), nullptr, &uavd, desc.cpu_handle(2));
-			
-			storage.views.push_back(ResourceView_Storage(view, desc));
-			return (u32)storage.views.size() - 1;
+			m_device->CreateUnorderedAccessView(buffer_storage.resource.Get(), nullptr, &uavd, desc.cpu_handle(2));
+		}
+		else if (view == ViewType::RaytracingAS)
+		{
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvd{};
+			srvd.Format = DXGI_FORMAT_UNKNOWN;
+			srvd.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+			srvd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			srvd.RaytracingAccelerationStructure.Location = offset;
+
+			m_device->CreateShaderResourceView(buffer_storage.resource.Get(), &srvd, desc.cpu_handle(0));
 		}
 		else
 		{
 			assert(false);
-			return 0;
 		}
+
+		try_insert(m_buffer_views, BufferView_Storage(buffer, view, desc), get_slot(handle.handle));
+	}
+
+	void RenderDevice_DX12::create_view(Texture texture, ViewType view, TextureView handle, TextureViewRange range)
+	{
+		assert(view != ViewType::None);
+		assert(view != ViewType::Constant);
+		assert(view != ViewType::RaytracingAS);
+			
+		auto& tex_storage = try_get(m_textures, get_slot(texture.handle));
+
+		DX12DescriptorChunk desc;
+		if (view == ViewType::RenderTarget)
+			desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		else if (view == ViewType::DepthStencil)
+			desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+		else
+			desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+		if (view == ViewType::DepthStencil)
+		{
+			auto dsv = to_dsv(range);
+			m_device->CreateDepthStencilView(tex_storage.resource.Get(), &dsv, desc.cpu_handle(0));
+		}
+		else if (view == ViewType::RenderTarget)
+		{
+			auto rtv = to_rtv(range);
+			m_device->CreateRenderTargetView(tex_storage.resource.Get(), &rtv, desc.cpu_handle(0));
+		}
+		else if (view == ViewType::ShaderResource)
+		{
+			auto srv = to_srv(range);
+			m_device->CreateShaderResourceView(tex_storage.resource.Get(), &srv, desc.cpu_handle(0));
+		}
+		else if (view == ViewType::UnorderedAccess)
+		{
+			auto uav = to_uav(range);
+			m_device->CreateUnorderedAccessView(tex_storage.resource.Get(), nullptr, &uav, desc.cpu_handle(0));
+		}
+		else
+		{
+			assert(false);
+		}
+
+		try_insert(m_texture_views, TextureView_Storage(texture, view, desc), get_slot(handle.handle));
 	}
 	
 
 	u32 RenderDevice_DX12::get_global_descriptor(Buffer buffer, u32 view) const
 	{
-		return (u32)try_get(m_buffers, get_slot(buffer.handle)).views[view].view.index_offset_from_base();
+		//return (u32)try_get(m_buffers, get_slot(buffer.handle)).views[view].view.index_offset_from_base();
+		return 0;
 	}
 
 	u32 RenderDevice_DX12::get_global_descriptor(Texture texture, u32 view) const
 	{
-		return (u32)try_get(m_textures, get_slot(texture.handle)).views[view].view.index_offset_from_base();
+		//return (u32)try_get(m_textures, get_slot(texture.handle)).views[view].view.index_offset_from_base();
+		return 0;
 
 		assert(false);
 		return 0;
@@ -533,18 +588,6 @@ namespace mira
 		Texture_Storage storage{};
 		storage.resource = texture;
 		auto desc = texture->GetDesc();
-
-		//storage->cpu_subresources.push_back({});
-		auto rtv_desc = m_descriptor_mgr->allocate(1, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-		D3D12_RENDER_TARGET_VIEW_DESC rtvd{};
-		rtvd.Format = desc.Format;
-		rtvd.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-		rtvd.Texture2D.MipSlice = 0;
-		rtvd.Texture2D.PlaneSlice = 0;
-		m_device->CreateRenderTargetView(storage.resource.Get(), &rtvd, rtv_desc.cpu_handle(0));
-
-		// 0th view is always a render target for the backbuffer
-		storage.views.push_back(ResourceView_Storage(ViewType::RenderTarget, rtv_desc));
 
 		try_insert(m_textures, storage, get_slot(handle.handle));
 	}

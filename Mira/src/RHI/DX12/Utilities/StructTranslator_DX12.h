@@ -26,13 +26,14 @@ namespace mira
 	D3D12_LOGIC_OP to_internal(LogicOp op);
 	u8 to_internal(ColorWriteEnable mask);
 	D3D12_RESOURCE_DIMENSION to_internal(TextureType type);
-	D3D12_RTV_DIMENSION to_internal_rtv(TextureType type);
-	D3D12_DSV_DIMENSION to_internal_dsv(TextureType type);
-	D3D12_SRV_DIMENSION to_internal_srv(TextureType type);
 	D3D12_RENDER_PASS_RENDER_TARGET_DESC to_internal(const RenderPassTargetDesc& desc);
 	D3D12_RENDER_PASS_DEPTH_STENCIL_DESC to_internal(const RenderPassDepthStencilTargetDesc& desc);
 	D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE to_internal(RenderPassBeginAccessType access);
 	D3D12_RENDER_PASS_ENDING_ACCESS_TYPE to_internal(RenderPassEndingAccessType access);
 	D3D12_RENDER_PASS_FLAGS to_internal(RenderPassFlag flags);
 	D3D12_RESOURCE_STATES to_internal(ResourceState state);
+	D3D12_SHADER_RESOURCE_VIEW_DESC to_srv(const TextureViewRange& range);
+	D3D12_RENDER_TARGET_VIEW_DESC to_rtv(const TextureViewRange& range);
+	D3D12_DEPTH_STENCIL_VIEW_DESC to_dsv(const TextureViewRange& range);
+	D3D12_UNORDERED_ACCESS_VIEW_DESC to_uav(const TextureViewRange& range);
 }

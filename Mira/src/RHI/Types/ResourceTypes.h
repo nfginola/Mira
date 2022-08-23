@@ -31,6 +31,7 @@ namespace mira
 		RenderTarget,			// RTV
 		DepthStencil,			// DSV
 		ShaderResource,			// SRV
+		RaytracingAS,			// SRV (Raytracing Acceleration Structure)
 		UnorderedAccess,		// UAV
 		Constant				// CBV
 	};
@@ -60,8 +61,6 @@ namespace mira
 		Texture1D,
 		Texture2D,
 		Texture3D,
-		Texture1D_Array,
-		Texture2D_Array,
 	};
 
 	enum class ResourceState

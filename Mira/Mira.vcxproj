@@ -171,6 +171,7 @@ copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(Tar
   <ItemGroup>
     <ClInclude Include="src\Application.h" />
     <ClInclude Include="src\Handles\HandleAllocator.h" />
+    <ClInclude Include="src\RHI\Types\ViewRangeTypes.h" />
     <ClInclude Include="src\RHI\Types\BarrierTypes.h" />
     <ClInclude Include="src\RHI\DX12\ShaderCompiler_DXC.h" />
     <ClInclude Include="src\RHI\DX12\RenderCommandList_DX12.h" />
