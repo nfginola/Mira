@@ -39,7 +39,22 @@ namespace mira
 
 	RenderDevice_DX12::~RenderDevice_DX12()
 	{
+		// Destroy any leftover views automatically
+		for (auto view : m_buffer_views)
+		{
+			if (view.has_value())
+			{
+				m_descriptor_mgr->free(&(*view).view);
+			}
+		}
 
+		for (auto view : m_texture_views)
+		{
+			if (view.has_value())
+			{
+				m_descriptor_mgr->free(&(*view).view);
+			}
+		}
 	}
 
 	SwapChain* RenderDevice_DX12::create_swapchain(void* hwnd, std::span<Texture> swapchain_buffer_handles)
@@ -209,12 +224,16 @@ namespace mira
 	{
 		auto& res = try_get(m_buffer_views, get_slot(handle.handle));
 		m_descriptor_mgr->free(&res.view);
+
+		m_buffer_views[get_slot(handle.handle)] = std::nullopt;
 	}
 
 	void RenderDevice_DX12::free_view(TextureView handle)
 	{
 		auto& res = try_get(m_texture_views, get_slot(handle.handle));
 		m_descriptor_mgr->free(&res.view);
+
+		m_texture_views[get_slot(handle.handle)] = std::nullopt;
 	}
 
 	void RenderDevice_DX12::create_view(Buffer buffer, ViewType view, BufferView handle, u32 offset, u32 stride, u32 count, bool raw)

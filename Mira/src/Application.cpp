@@ -84,26 +84,20 @@ Application::Application()
 		};
 		cmd_list->submit_barriers(barrs_after);
 
-		// submit cmd list
 		mira::RenderCommandList* cmdls[] = { cmd_list };
-		auto receipt = rhp.allocate<mira::SyncReceipt>();
-		rd->submit_command_lists(cmdls, mira::QueueType::Graphics, {}, receipt);
+		rd->submit_command_lists(cmdls, mira::QueueType::Graphics);
 
 		// present to swapchain
 		sc->present(false);
 
 		// wait for GPU frame
-		//rd->flush();
-		rd->wait_for_gpu(receipt);
-		rhp.free(receipt);		// sync recycled internally since a CPU wait was done
+		rd->flush();
 
 		rd->recycle_command_list(cmd_list);
 	}
 
 	rd->flush();
 	
-	for (u32 i = 0; i < _countof(bb_rts); ++i)
-		rd->free_view(bb_rts[i]);
 }
 
 void Application::run()
