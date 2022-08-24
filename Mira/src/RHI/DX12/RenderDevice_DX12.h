@@ -27,11 +27,8 @@ namespace mira
 		RenderDevice_DX12(ComPtr<ID3D12Device5> device, IDXGIAdapter* adapter, bool debug);
 		~RenderDevice_DX12();
 
-		// Pass buffer handles to attach swapchain buffers to.
-		// Number of passed handles is the number of buffers used for the swapchain!
 		SwapChain* create_swapchain(void* hwnd, std::span<Texture> swapchain_buffer_handles);
 
-		// Resource creation/destruction
 		void create_buffer(Buffer handle, const BufferDesc& desc);
 		void create_texture(Texture handle, const TextureDesc& desc);
 		void create_graphics_pipeline(Pipeline handle, const GraphicsPipelineDesc& desc);
@@ -39,7 +36,6 @@ namespace mira
 		void create_view(BufferView handle, Buffer buffer, const BufferViewDesc& desc);
 		void create_view(TextureView handle, Texture texture, const TextureViewDesc& desc);
 
-		// Sensitive resources that may be in-flight
 		void free_buffer(Buffer handle);
 		void free_texture(Texture handle);
 		void free_pipeline(Pipeline handle);
@@ -62,13 +58,16 @@ namespace mira
 			std::optional<SyncReceipt> incoming_sync = std::nullopt,				// Synchronize with prior to command list execution
 			std::optional<SyncReceipt> outgoing_sync = std::nullopt);				// Generate sync after command list execution
 
-		void upload_to_buffer(Buffer buffer, u32 dst_offset, void* data, u32 size);
+		u32 get_global_descriptor(BufferView view) const;
+		u32 get_global_descriptor(TextureView view) const;
 
 		void flush();
 		void wait_for_gpu(SyncReceipt receipt);
+
+		void upload_to_buffer(Buffer buffer, u32 dst_offset, void* data, u32 size);
+
 		
-		u32 get_global_descriptor(BufferView view) const;
-		u32 get_global_descriptor(TextureView view) const;
+
 	
 
 
