@@ -40,6 +40,10 @@ namespace mira
 		auto flags = m_dev->get_rp_flags(cmd.rp);
 		m_list->BeginRenderPass((u32)rts.size(), rts.data(), ds.has_value() ? &(*ds) : nullptr, flags);
 
+		/*
+			These should be moved to another command. I dont know where though..
+		*/
+
 		D3D12_RECT rect{};
 		rect.left = 0;
 		rect.right = 1600;

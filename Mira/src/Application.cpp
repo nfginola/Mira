@@ -123,7 +123,6 @@ Application::Application()
 
 
 	// Using new render list
-	// A bit.. wordy..
 	while (m_window->is_alive())
 	{
 		m_window->pump_messages();
@@ -133,32 +132,18 @@ Application::Application()
 
 		mira::NewRenderCommandList list;
 
-		{
-			mira::RenderCommandBarrier cmd_barrs{};
-			cmd_barrs.barriers = { mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::Present, mira::ResourceState::RenderTarget, 0) };
-			list.submit(cmd_barrs);
-		}
-
-		mira::RenderCommandSetPipeline cmd_pipe{};
-		cmd_pipe.pipeline = blit_pipe;
-		list.submit(cmd_pipe);
-
-		mira::RenderCommandBeginRenderPass cmd_rp_beg{};
-		cmd_rp_beg.rp = curr_bb_rp;
-		list.submit(cmd_rp_beg);
-
-		mira::RenderCommandDraw cmd_draw{};
-		cmd_draw.verts_per_instance = 3;
-		cmd_draw.instance_count = 1;
-		list.submit(cmd_draw);
-
+		list.submit(mira::RenderCommandBarrier()
+			.append(mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::Present, mira::ResourceState::RenderTarget, 0))
+		);
+	
+		list.submit(mira::RenderCommandSetPipeline(blit_pipe));
+		list.submit(mira::RenderCommandBeginRenderPass(curr_bb_rp));
+		list.submit(mira::RenderCommandDraw(3, 1, 0, 0));
 		list.submit(mira::RenderCommandEndRenderPass());
 
-		{
-			mira::RenderCommandBarrier cmd_barrs{};
-			cmd_barrs.barriers = { mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::RenderTarget, mira::ResourceState::Present, 0) };
-			list.submit(cmd_barrs);
-		}
+		list.submit(mira::RenderCommandBarrier()
+			.append(mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::RenderTarget, mira::ResourceState::Present, 0))
+		);
 
 		mira::CommandList list_hdls[]{ rhp.allocate<mira::CommandList>() };
 		rd->allocate_command_list(list_hdls[0]);

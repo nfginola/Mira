@@ -74,16 +74,29 @@ namespace mira
 		u32 instance_count{ 0 };
 		u32 vert_start{ 0 };
 		u32 instance_start{ 0 };
+
+		RenderCommandDraw() = default;
+		RenderCommandDraw(u32 verts_per_instance_in, u32 instance_count_in, u32 vert_start_in, u32 instance_start_in) :
+			verts_per_instance(verts_per_instance_in),
+			instance_count(instance_count_in),
+			vert_start(vert_start_in),
+			instance_start(instance_start_in) {}
 	};
 
 	struct RenderCommandSetPipeline : public RenderCommandTyped<RenderCommandType::SetPipeline>
 	{
 		Pipeline pipeline;
+
+		RenderCommandSetPipeline() = default;
+		RenderCommandSetPipeline(Pipeline pipeline_in) : pipeline(pipeline_in) {}
 	};
 
 	struct RenderCommandBeginRenderPass : public RenderCommandTyped<RenderCommandType::BeginRenderPass>
 	{
 		RenderPass rp;
+
+		RenderCommandBeginRenderPass() = default;
+		RenderCommandBeginRenderPass(RenderPass rp_in) : rp(rp_in) {}
 	};
 
 	struct RenderCommandEndRenderPass: public RenderCommandTyped<RenderCommandType::EndRenderPass>
@@ -94,6 +107,9 @@ namespace mira
 	struct RenderCommandBarrier : public RenderCommandTyped<RenderCommandType::Barrier>
 	{
 		std::vector<ResourceBarrier> barriers;
+
+		RenderCommandBarrier() = default;
+		RenderCommandBarrier& append(const ResourceBarrier& barr) { barriers.push_back(barr); return *this;  }
 	};
 
 
