@@ -38,7 +38,7 @@ namespace mira
 		void create_renderpass(RenderPass handle, const RenderPassDesc& desc);
 		void create_view(BufferView handle, Buffer buffer, const BufferViewDesc& desc);
 		void create_view(TextureView handle, Texture texture, const TextureViewDesc& desc);
-		
+
 		// Sensitive resources that may be in-flight
 		void free_buffer(Buffer handle);
 		void free_texture(Texture handle);
@@ -46,10 +46,21 @@ namespace mira
 		void free_renderpass(RenderPass handle);
 		void free_view(BufferView handle);
 		void free_view(TextureView handle);
-
-
 		void recycle_sync(SyncReceipt receipt);
-		void recycle_command_list(RenderCommandList* list);
+		void recycle_command_list(CommandList handle);
+
+		// Reserve metadata for command recording
+		void allocate_command_list(CommandList handle, QueueType queue = QueueType::Graphics);
+
+		// Compile backend representation of the command list
+		void compile_command_list(CommandList handle, RenderCommandList list);
+
+		// Submit a compiled command list
+		void submit_command_lists(
+			std::span<CommandList> lists,
+			QueueType queue = QueueType::Graphics,
+			std::optional<SyncReceipt> incoming_sync = std::nullopt,				// Synchronize with prior to command list execution
+			std::optional<SyncReceipt> outgoing_sync = std::nullopt);				// Generate sync after command list execution
 
 		void upload_to_buffer(Buffer buffer, u32 dst_offset, void* data, u32 size);
 
@@ -61,33 +72,16 @@ namespace mira
 	
 
 
-		// Reserve metadata for command recording
-		void allocate_command_list(CommandList handle, QueueType queue = QueueType::Graphics);
-		void recycle_command_list(CommandList handle);
-
-
-		// Compile backend representation of the command list
-		void compile_command_list(CommandList handle, NewRenderCommandList list);
-
-		// Submit a compiled command list
-		void submit_command_lists2(
-			std::span<CommandList> lists,
-			QueueType queue = QueueType::Graphics,
-			std::optional<SyncReceipt> incoming_sync = std::nullopt,				// Synchronize with prior to command list execution
-			std::optional<SyncReceipt> outgoing_sync = std::nullopt);			// Generate sync after command list execution
 
 
 
-		RenderCommandList* allocate_command_list(QueueType queue = QueueType::Graphics);
-
-		void submit_command_lists(
-			std::span<RenderCommandList*> lists,
-			QueueType queue = QueueType::Graphics,
-			std::optional<SyncReceipt> incoming_sync = std::nullopt,
-			std::optional<SyncReceipt> outgoing_sync = std::nullopt);
 
 
 
+
+
+
+	public:
 		// Implementation interfaces
 		ID3D12Resource* get_api_buffer(Buffer buffer) const;
 		ID3D12Resource* get_api_texture(Texture texture) const;
@@ -249,34 +243,21 @@ namespace mira
 		ComPtr<ID3D12RootSignature> m_common_rsig;
 		std::unique_ptr<DX12DescriptorManager> m_descriptor_mgr;
 
-		/*
-			Resources
-		*/
 		std::vector<std::optional<Buffer_Storage>> m_buffers;
 		std::vector<std::optional<Texture_Storage>> m_textures;
 		std::vector<std::optional<BufferView_Storage>> m_buffer_views;
 		std::vector<std::optional<TextureView_Storage>> m_texture_views;
 		std::vector<std::optional<Pipeline_Storage>> m_pipelines;
 		std::vector<std::optional<RenderPass_Storage>> m_renderpasses;
-
 		std::vector<std::optional<CommandList_Storage>> m_command_lists;		
-		std::queue<CommandAtorAndList> m_recycled_ator_and_list;
-
 		std::vector<std::optional<SyncPrimitive>> m_syncs;		
+
+		std::queue<CommandAtorAndList> m_recycled_ator_and_list;
 		std::queue<SyncPrimitive> m_recycled_syncs;
 
 		// Important that this is destructed before resources and descriptor managers (need to free underlying texture)
 		std::unique_ptr<SwapChain_DX12> m_swapchain;
 
-
-
-
-
-
-
-		// Reuse existing command allocators
-		std::queue<std::unique_ptr<RenderCommandList_DX12>> m_cmd_list_pool_direct, m_cmd_list_pool_compute, m_cmd_list_pool_copy;
-		std::unordered_map<RenderCommandList_DX12*, std::unique_ptr<RenderCommandList_DX12>> m_cmd_lists_in_play;
 	};
 		
 

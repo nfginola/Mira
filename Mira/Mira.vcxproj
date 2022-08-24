@@ -152,7 +152,6 @@ copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(Tar
     <ClCompile Include="src\RHI\DX12\CommandCompiler_DX12.cpp" />
     <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\RHI\DX12\ShaderCompiler_DXC.cpp" />
-    <ClCompile Include="src\RHI\DX12\RenderCommandList_DX12.cpp" />
     <ClCompile Include="src\RHI\DX12\Utilities\DX12Fence.cpp" />
     <ClCompile Include="src\RHI\DX12\Utilities\DX12Queue.cpp" />
     <ClCompile Include="src\RHI\DX12\Utilities\DX12DescriptorHeap.cpp" />
@@ -175,7 +174,6 @@ copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(Tar
     <ClInclude Include="src\Handles\HandleAllocator.h" />
     <ClInclude Include="src\RHI\Types\BarrierTypes.h" />
     <ClInclude Include="src\RHI\DX12\ShaderCompiler_DXC.h" />
-    <ClInclude Include="src\RHI\DX12\RenderCommandList_DX12.h" />
     <ClInclude Include="src\RHI\DX12\Utilities\DX12RenderPass.h" />
     <ClInclude Include="src\RHI\DX12\Utilities\StructTranslator_DX12.h" />
     <ClInclude Include="src\RHI\DX12\Utilities\DX12Fence.h" />

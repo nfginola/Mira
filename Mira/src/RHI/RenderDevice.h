@@ -28,7 +28,6 @@ namespace mira
 		virtual void free_view(TextureView handle) = 0;
 
 		virtual void recycle_sync(SyncReceipt receipt) = 0;
-		virtual void recycle_command_list(RenderCommandList* list) = 0;
 
 		// Grab GPU-accessible resource handle
 		/*
@@ -67,10 +66,9 @@ namespace mira
 		virtual void allocate_command_list(CommandList handle, QueueType queue = QueueType::Graphics) = 0;
 
 		// Compile backend representation of the command list
-		virtual void compile_command_list(CommandList handle, NewRenderCommandList list) = 0;
+		virtual void compile_command_list(CommandList handle, RenderCommandList list) = 0;
 
-		// Submit a compiled command list
-		virtual void submit_command_lists2(
+		virtual void submit_command_lists(
 			std::span<CommandList> lists,
 			QueueType queue = QueueType::Graphics,
 			std::optional<SyncReceipt> incoming_sync = std::nullopt,				// Synchronize with prior to command list execution
@@ -78,15 +76,6 @@ namespace mira
 
 		virtual void recycle_command_list(CommandList handle) = 0;
 
-
-
-
-		virtual RenderCommandList* allocate_command_list(QueueType queue = QueueType::Graphics) = 0;
-		virtual void submit_command_lists(
-			std::span<RenderCommandList*> lists,
-			QueueType queue = QueueType::Graphics,
-			std::optional<SyncReceipt> incoming_sync = std::nullopt,				// Synchronize with prior to command list execution
-			std::optional<SyncReceipt> outgoing_sync = std::nullopt) = 0;			// Generate sync after command list execution
 
 
 		virtual ~RenderDevice() {}

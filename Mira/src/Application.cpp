@@ -1,12 +1,10 @@
 #include "Application.h"
 
-#include "RHI//DX12/RenderDevice_DX12.h"
+#include "RHI/DX12/RenderDevice_DX12.h"
 #include "RHI/DX12/RenderBackend_DX12.h"
 #include "RHI/DX12/ShaderCompiler_DXC.h"
 #include "RHI/PipelineBuilder.h"
 #include "Window/Window.h"
-
-#include "Handles/TypedHandlePool.h"
 
 #include "Handles/HandleAllocator.h"
 
@@ -15,40 +13,13 @@ Application::Application()
 	const UINT c_width = 1600;
 	const UINT c_height = 900;
 
-	auto win_proc_callback = [this](HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) -> LRESULT
-	{
-		return this->window_proc(hwnd, uMsg, wParam, lParam);
-	};
+	auto win_proc_callback = [this](HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) -> LRESULT { return this->window_proc(hwnd, uMsg, wParam, lParam); };
 	m_window = std::make_unique<Window>(GetModuleHandle(NULL), win_proc_callback, c_width, c_height);
 
 	mira::HandleAllocator rhp;
 	auto sclr = std::make_unique<mira::ShaderCompiler_DXC>();
 	auto be_dx = std::make_unique<mira::RenderBackend_DX12>(true);
 	auto rd = be_dx->create_device();
-
-	{
-		//// Grab new command list
-		//mira::NewRenderCommandList list;
-
-		//// Record commands
-		//mira::RenderCommandDraw cmd{};
-		//cmd.instance_count = 1;
-		//cmd.instance_start = 0;
-		//cmd.verts_per_instance = 3213;
-		//cmd.vert_start = 123123;
-		//list.submit(std::move(cmd));
-
-		//// Compile
-		//mira::CommandList cmd_hdl = rhp.allocate<mira::CommandList>();
-		//rd->allocate_command_list(cmd_hdl);
-		//rd->compile_command_list(cmd_hdl, list);
-
-
-
-
-
-	}
-
 
 	// Create swapchain (requires at least 2 buffers)
 	mira::Texture bb_textures[]{ rhp.allocate<mira::Texture>(), rhp.allocate<mira::Texture>() };
@@ -82,47 +53,6 @@ Application::Application()
 			.build());
 	}
 
-	//while (m_window->is_alive())
-	//{
-	//	m_window->pump_messages();
-
-	//	auto curr_bb = sc->get_next_draw_surface();
-	//	auto curr_bb_rp = bb_rps[sc->get_next_draw_surface_idx()];
-
-	//	auto cmd_list = rd->allocate_command_list();
-
-	//	mira::ResourceBarrier barrs_before[]
-	//	{ 
-	//		mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::Present, mira::ResourceState::RenderTarget, 0) 
-	//	};
-	//	cmd_list->submit_barriers(barrs_before);
-
-	//	cmd_list->set_pipeline(blit_pipe);
-	//	cmd_list->begin_renderpass(curr_bb_rp);
-	//	cmd_list->draw(3, 1, 0, 0);
-	//	cmd_list->end_renderpass();
-
-	//	mira::ResourceBarrier barrs_after[]
-	//	{
-	//		mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::RenderTarget, mira::ResourceState::Present, 0)
-	//	};
-	//	cmd_list->submit_barriers(barrs_after);
-
-	//	mira::RenderCommandList* cmdls[] = { cmd_list };
-	//	rd->submit_command_lists(cmdls, mira::QueueType::Graphics);
-
-	//	// present to swapchain
-	//	sc->present(false);
-
-	//	// wait for GPU frame
-	//	rd->flush();
-
-	//	rd->recycle_command_list(cmd_list);
-	//}
-
-
-
-	// Using new render list
 	while (m_window->is_alive())
 	{
 		m_window->pump_messages();
@@ -130,7 +60,7 @@ Application::Application()
 		auto curr_bb = sc->get_next_draw_surface();
 		auto curr_bb_rp = bb_rps[sc->get_next_draw_surface_idx()];
 
-		mira::NewRenderCommandList list;
+		mira::RenderCommandList list;
 
 		list.submit(mira::RenderCommandBarrier()
 			.append(mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::Present, mira::ResourceState::RenderTarget, 0))
@@ -148,14 +78,16 @@ Application::Application()
 		mira::CommandList list_hdls[]{ rhp.allocate<mira::CommandList>() };
 		rd->allocate_command_list(list_hdls[0]);
 		rd->compile_command_list(list_hdls[0], list);
-		rd->submit_command_lists2(list_hdls);
+		rd->submit_command_lists(list_hdls);
 
 		// present to swapchain
 		sc->present(false);
 
 		// wait for GPU frame
 		rd->flush();
+
 		rd->recycle_command_list(list_hdls[0]);
+		rhp.free(list_hdls[0]);
 	}
 
 	rd->flush();
