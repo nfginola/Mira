@@ -12,58 +12,6 @@
 
 Application::Application()
 {
-	{
-		// Testing
-		mira::NewRenderCommandList list;
-		mira::RenderCommandDraw cmd{};
-		cmd.instance_count = 1;
-		cmd.instance_start = 0;
-		cmd.verts_per_instance = 3213;
-		cmd.vert_start = 123123;
-		list.submit(cmd);
-
-		for (const auto* cmd : list.m_cmds)
-		{
-			switch (cmd->CMD_TYPE)
-			{
-			case mira::RenderCommandType::Draw:
-			{
-				auto thing = static_cast<const mira::RenderCommandDraw*>(cmd);
-
-				break;
-			}
-			default:
-				assert(false);
-			}
-		}
-
-		assert(false);
-
-		//for (const auto* cmd : list.m_cmds)
-		//{
-		//	switch (cmd->type)
-		//	{
-		//	case mira::RenderCommandDraw::s_cmd:
-		//	{
-		//		auto thing = *static_cast<const mira::RenderCommandDraw*>(cmd);
-
-		//		OutputDebugStringW(L"Lol\n");
-
-		//		break;
-		//	}
-		//	default:
-		//		assert(false);
-		//	}
-		//}
-
-
-
-
-	}
-
-
-
-
 	const UINT c_width = 1600;
 	const UINT c_height = 900;
 
@@ -77,6 +25,30 @@ Application::Application()
 	auto sclr = std::make_unique<mira::ShaderCompiler_DXC>();
 	auto be_dx = std::make_unique<mira::RenderBackend_DX12>(true);
 	auto rd = be_dx->create_device();
+
+	{
+		//// Grab new command list
+		//mira::NewRenderCommandList list;
+
+		//// Record commands
+		//mira::RenderCommandDraw cmd{};
+		//cmd.instance_count = 1;
+		//cmd.instance_start = 0;
+		//cmd.verts_per_instance = 3213;
+		//cmd.vert_start = 123123;
+		//list.submit(std::move(cmd));
+
+		//// Compile
+		//mira::CommandList cmd_hdl = rhp.allocate<mira::CommandList>();
+		//rd->allocate_command_list(cmd_hdl);
+		//rd->compile_command_list(cmd_hdl, list);
+
+
+
+
+
+	}
+
 
 	// Create swapchain (requires at least 2 buffers)
 	mira::Texture bb_textures[]{ rhp.allocate<mira::Texture>(), rhp.allocate<mira::Texture>() };
@@ -110,6 +82,48 @@ Application::Application()
 			.build());
 	}
 
+	//while (m_window->is_alive())
+	//{
+	//	m_window->pump_messages();
+
+	//	auto curr_bb = sc->get_next_draw_surface();
+	//	auto curr_bb_rp = bb_rps[sc->get_next_draw_surface_idx()];
+
+	//	auto cmd_list = rd->allocate_command_list();
+
+	//	mira::ResourceBarrier barrs_before[]
+	//	{ 
+	//		mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::Present, mira::ResourceState::RenderTarget, 0) 
+	//	};
+	//	cmd_list->submit_barriers(barrs_before);
+
+	//	cmd_list->set_pipeline(blit_pipe);
+	//	cmd_list->begin_renderpass(curr_bb_rp);
+	//	cmd_list->draw(3, 1, 0, 0);
+	//	cmd_list->end_renderpass();
+
+	//	mira::ResourceBarrier barrs_after[]
+	//	{
+	//		mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::RenderTarget, mira::ResourceState::Present, 0)
+	//	};
+	//	cmd_list->submit_barriers(barrs_after);
+
+	//	mira::RenderCommandList* cmdls[] = { cmd_list };
+	//	rd->submit_command_lists(cmdls, mira::QueueType::Graphics);
+
+	//	// present to swapchain
+	//	sc->present(false);
+
+	//	// wait for GPU frame
+	//	rd->flush();
+
+	//	rd->recycle_command_list(cmd_list);
+	//}
+
+
+
+	// Using new render list
+	// A bit.. wordy..
 	while (m_window->is_alive())
 	{
 		m_window->pump_messages();
@@ -117,35 +131,46 @@ Application::Application()
 		auto curr_bb = sc->get_next_draw_surface();
 		auto curr_bb_rp = bb_rps[sc->get_next_draw_surface_idx()];
 
-		auto cmd_list = rd->allocate_command_list();
+		mira::NewRenderCommandList list;
 
-		mira::ResourceBarrier barrs_before[]
-		{ 
-			mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::Present, mira::ResourceState::RenderTarget, 0) 
-		};
-		cmd_list->submit_barriers(barrs_before);
-
-		cmd_list->set_pipeline(blit_pipe);
-		cmd_list->begin_renderpass(curr_bb_rp);
-		cmd_list->draw(3, 1, 0, 0);
-		cmd_list->end_renderpass();
-
-		mira::ResourceBarrier barrs_after[]
 		{
-			mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::RenderTarget, mira::ResourceState::Present, 0)
-		};
-		cmd_list->submit_barriers(barrs_after);
+			mira::RenderCommandBarrier cmd_barrs{};
+			cmd_barrs.barriers = { mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::Present, mira::ResourceState::RenderTarget, 0) };
+			list.submit(cmd_barrs);
+		}
 
-		mira::RenderCommandList* cmdls[] = { cmd_list };
-		rd->submit_command_lists(cmdls, mira::QueueType::Graphics);
+		mira::RenderCommandSetPipeline cmd_pipe{};
+		cmd_pipe.pipeline = blit_pipe;
+		list.submit(cmd_pipe);
+
+		mira::RenderCommandBeginRenderPass cmd_rp_beg{};
+		cmd_rp_beg.rp = curr_bb_rp;
+		list.submit(cmd_rp_beg);
+
+		mira::RenderCommandDraw cmd_draw{};
+		cmd_draw.verts_per_instance = 3;
+		cmd_draw.instance_count = 1;
+		list.submit(cmd_draw);
+
+		list.submit(mira::RenderCommandEndRenderPass());
+
+		{
+			mira::RenderCommandBarrier cmd_barrs{};
+			cmd_barrs.barriers = { mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::RenderTarget, mira::ResourceState::Present, 0) };
+			list.submit(cmd_barrs);
+		}
+
+		mira::CommandList list_hdls[]{ rhp.allocate<mira::CommandList>() };
+		rd->allocate_command_list(list_hdls[0]);
+		rd->compile_command_list(list_hdls[0], list);
+		rd->submit_command_lists2(list_hdls);
 
 		// present to swapchain
 		sc->present(false);
 
 		// wait for GPU frame
 		rd->flush();
-
-		rd->recycle_command_list(cmd_list);
+		rd->recycle_command_list(list_hdls[0]);
 	}
 
 	rd->flush();

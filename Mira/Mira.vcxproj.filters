@@ -69,6 +69,9 @@
     <ClCompile Include="src\Application.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\RHI\DX12\CommandCompiler_DX12.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Handles\HandlePool.h">
@@ -177,6 +180,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\RHI\Types\ViewTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\RHI\DX12\CommandCompiler_DX12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

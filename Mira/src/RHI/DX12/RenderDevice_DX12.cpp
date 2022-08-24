@@ -7,6 +7,7 @@
 #include "Utilities/DX12Fence.h"
 #include "Utilities/StructTranslator_DX12.h"
 #include "RenderCommandList_DX12.h"
+#include "CommandCompiler_DX12.h"
 
 #include "SwapChain_DX12.h"
 
@@ -394,6 +395,8 @@ namespace mira
 			HR_VFY(hr);
 			hr = m_device->CreateCommandList1(0, type, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(cmdl.GetAddressOf()));
 			HR_VFY(hr);
+			ator->Reset();
+			cmdl->Reset(ator.Get(), nullptr);
 			
 			render_cmd_list = std::make_unique<RenderCommandList_DX12>(this, ator, cmdl, queue);
 		}
@@ -523,30 +526,94 @@ namespace mira
 		return (u32)res.view.index_offset_from_base();
 	}
 
-	void RenderDevice_DX12::allocate_command_list(CommandList handle)
+	void RenderDevice_DX12::allocate_command_list(CommandList handle, QueueType queue)
 	{
 		CommandList_Storage storage{};
-		
-		// allocate a compile context
-		// put into storage
-		assert(false);
 
-		try_insert(m_command_lists, storage, get_slot(handle.handle));
+		// Re-use if any
+		auto& recycled_pool = m_recycled_ator_and_list;
+		if (!recycled_pool.empty())
+		{
+			auto ator_list = recycled_pool.front();
+			ator_list.reset();		// Reset ator and list for re-use
+			recycled_pool.pop();
+
+			storage.compiler = std::make_unique<CommandCompiler_DX12>(this, ator_list.ator, ator_list.list, queue);
+		}
+		else
+		{
+			// Allocate new ator + list
+			HRESULT hr{ S_OK };
+			ComPtr<ID3D12CommandAllocator> ator;
+			ComPtr<ID3D12GraphicsCommandList4> cmdl;
+			hr = m_device->CreateCommandAllocator(get_command_list_type(queue), IID_PPV_ARGS(ator.GetAddressOf()));
+			HR_VFY(hr);
+			hr = m_device->CreateCommandList1(0, get_command_list_type(queue), D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(cmdl.GetAddressOf()));
+			HR_VFY(hr);
+
+			// Reset 
+			ator->Reset();
+			cmdl->Reset(ator.Get(), nullptr);
+
+			storage.compiler = std::make_unique<CommandCompiler_DX12>(this, ator, cmdl, queue);
+		}
+
+		try_insert_move(m_command_lists, std::move(storage), get_slot(handle.handle));
+	}
+
+	void RenderDevice_DX12::recycle_command_list(CommandList handle)
+	{
+		auto& res = try_get(m_command_lists, get_slot(handle.handle));
+
+		CommandAtorAndList storage{};
+		storage.ator = res.compiler->get_allocator();
+		storage.list = res.compiler->get_list();
+
+		m_recycled_ator_and_list.push(storage);
+	
+		m_command_lists[get_slot(handle.handle)] = std::nullopt;
 	}
 
 	void RenderDevice_DX12::compile_command_list(CommandList handle, NewRenderCommandList list)
 	{	
 		auto& res = try_get(m_command_lists, get_slot(handle.handle));
-	
-		// record list with API functions
-		/*
-			for each command in list:
-				res.compile_ctx->compile(command);
-		*/
+
+		// Compile
+		for (const auto& cmd : list.get_commands())
+		{
+			switch (cmd->type)
+			{
+			case RenderCommandDraw::TYPE:
+			{
+				res.compiler->compile(*static_cast<RenderCommandDraw*>(cmd.get()));
+				break;
+			}
+			case RenderCommandSetPipeline::TYPE:
+			{
+				res.compiler->compile(*static_cast<RenderCommandSetPipeline*>(cmd.get()));
+				break;
+			}
+			case RenderCommandBeginRenderPass::TYPE:
+			{
+				res.compiler->compile(*static_cast<RenderCommandBeginRenderPass*>(cmd.get()));
+				break;
+			}
+			case RenderCommandEndRenderPass::TYPE:
+			{
+				res.compiler->compile(*static_cast<RenderCommandEndRenderPass*>(cmd.get()));
+				break;
+			}
+			case RenderCommandBarrier::TYPE:
+			{
+				res.compiler->compile(*static_cast<RenderCommandBarrier*>(cmd.get()));
+				break;
+			}
+			default:
+				assert(false);
+			}
+		}
 
 		res.is_compiled = true;
-
-		assert(false);
 	}
 
 	void RenderDevice_DX12::submit_command_lists2(std::span<CommandList> lists, QueueType queue, std::optional<SyncReceipt> incoming_sync, std::optional<SyncReceipt> outgoing_sync)
@@ -557,20 +624,46 @@ namespace mira
 		{
 			const auto& storage = try_get(m_command_lists, get_slot(lists[i].handle));
 			assert(storage.is_compiled);
-
-			// gather all the underlying command lists for submission
-			// cmdls[i] = storage.____
+	
+			auto cmdl = storage.compiler->get_list();
+			cmdl->Close();
+			cmdls[i] = cmdl;
 		}
 
-		// grab queue depending on queue type
-		
-		// submit incoming sync
+		DX12Queue* curr_queue = get_queue(queue);
 
-		// submit the lists with single call
+		// Wait for incoming sync
+		if (incoming_sync.has_value())
+		{
+			// Lookup sync, and perform GPU wait
+			const auto& sync = try_get(m_syncs, get_slot(incoming_sync->handle));
+			sync.fence.gpu_wait(*curr_queue);
+		}
 
-		// generate outgoing sync
+		curr_queue->execute_command_lists((u32)lists.size(), cmdls);
 
-		assert(false);
+		// Generate outgoing sync
+		std::optional<SyncReceipt> sync_receipt{ std::nullopt };
+		if (outgoing_sync.has_value())
+		{
+			SyncPrimitive sync{};
+
+			// Use recycled syncs
+			if (!m_recycled_syncs.empty())
+			{
+				sync = std::move(m_recycled_syncs.front());
+				m_recycled_syncs.pop();
+			}
+			// Create new sync
+			else
+			{
+				sync.fence = DX12Fence(m_device.Get(), 0);
+			}
+
+			curr_queue->insert_signal(sync.fence);
+
+			try_insert(m_syncs, std::move(sync), get_slot(outgoing_sync->handle));
+		}
 	}
 
 
@@ -791,6 +884,22 @@ namespace mira
 			curr_queue = m_direct_queue.get();
 		}
 		return curr_queue;
+	}
+
+
+	D3D12_COMMAND_LIST_TYPE RenderDevice_DX12::get_command_list_type(QueueType queue)
+	{
+		switch (queue)
+		{
+		case QueueType::Graphics:
+			return D3D12_COMMAND_LIST_TYPE_DIRECT;
+		case QueueType::Compute:
+			return D3D12_COMMAND_LIST_TYPE_COMPUTE;
+		case QueueType::Copy:
+			return D3D12_COMMAND_LIST_TYPE_COPY;
+		default:
+			return D3D12_COMMAND_LIST_TYPE_DIRECT;
+		}
 	}
 
 

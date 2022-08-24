@@ -149,6 +149,7 @@ copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(Tar
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\RHI\DX12\CommandCompiler_DX12.cpp" />
     <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\RHI\DX12\ShaderCompiler_DXC.cpp" />
     <ClCompile Include="src\RHI\DX12\RenderCommandList_DX12.cpp" />
@@ -169,6 +170,7 @@ copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(Tar
     <ClCompile Include="vendor\D3D12MemoryAllocator\src\D3D12MemAlloc.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\RHI\DX12\CommandCompiler_DX12.h" />
     <ClInclude Include="src\Application.h" />
     <ClInclude Include="src\Handles\HandleAllocator.h" />
     <ClInclude Include="src\RHI\Types\BarrierTypes.h" />

@@ -23,60 +23,6 @@ namespace mira
 
 	};
 
-	//enum class RenderCommandType
-	//{
-	//	None,
-	//	Draw,
-	//	SetPipeline
-	//};
-
-	//struct RenderCommand
-	//{
-	//	RenderCommandType type = RenderCommandType::None;
-	//};
-
-	//template <RenderCommandType CMD_TYPE>
-	//struct RenderCommandTyped : public RenderCommand
-	//{
-	//	static const RenderCommandType s_cmd = CMD_TYPE;
-
-	//	RenderCommandTyped() { type = s_cmd; }
-	//};
-
-	//struct RenderCommandDraw : public RenderCommandTyped<RenderCommandType::Draw>
-	//{
-	//	u32 verts_per_instance{ 0 };
-	//	u32 instance_count{ 0 };
-	//	u32 vert_start{ 0 };
-	//	u32 instance_start{ 0 };
-	//};
-
-	//
-	//class NewRenderCommandList
-	//{
-	//public:	
-	//	void submit(RenderCommandDraw cmd)
-	//	{
-	//		auto stored = new RenderCommandDraw();
-	//		*stored = cmd;
-	//		m_cmds.push_back(stored);
-	//	}
-
-	//	std::vector<RenderCommand*> m_cmds;
-	//};
-
-	//struct RenderCommandDraw
-	//{
-	//	u32 verts_per_instance{ 0 };
-	//	u32 instance_count{ 0 };
-	//	u32 vert_start{ 0 };
-	//	u32 instance_start{ 0 };
-	//};
-
-	/*
-		Store render commands in a classic "Command + Enum" fashion to know what
-		underlying type is stored.
-	*/
 	enum class RenderCommandType
 	{
 		None,
@@ -84,46 +30,96 @@ namespace mira
 		SetPipeline,
 		BeginRenderPass,
 		EndRenderPass,
+		Barrier,
 		UpdateShaderArgs
 	};
-	
+
 	struct RenderCommand
 	{
-		RenderCommandType CMD_TYPE = RenderCommandType::None;
-		RenderCommand(RenderCommandType type) : CMD_TYPE(type) {}
+		RenderCommandType type{ RenderCommandType::None };		// Keep track of underlying command
 	};
 
-	struct RenderCommandDraw : public RenderCommand
+
+	// Helper to easily apply struct to enum matching.
+	template <RenderCommandType CMD_TYPE>
+	struct RenderCommandTyped : public RenderCommand
+	{
+		// Additionally, we store statically for ease of use
+		/*
+			Instead of:
+
+				switch(cmd->type)
+				{
+					case RenderCommandType::Draw:
+						auto cmd = static_cast<RenderCommandDraw*>(cmd);
+				}
+
+			Where the connection between the struct and enum are implicitly connected, we can make it explicit by
+			statically storing the enum for each struct type.
+		
+				switch(cmd.type)
+				{
+					case RenderCommandDraw::TYPE:
+						auto cmd = static_cast<RenderCommandDraw*>(cmd);
+				}
+		*/
+
+		static const RenderCommandType TYPE = CMD_TYPE;		
+		RenderCommandTyped() { type = TYPE; }
+	};
+
+	struct RenderCommandDraw : public RenderCommandTyped<RenderCommandType::Draw>
 	{
 		u32 verts_per_instance{ 0 };
 		u32 instance_count{ 0 };
 		u32 vert_start{ 0 };
 		u32 instance_start{ 0 };
-
-		RenderCommandDraw() : RenderCommand(RenderCommandType::Draw) {}
 	};
 
-	struct RenderCommandSetPipeline : public RenderCommand
+	struct RenderCommandSetPipeline : public RenderCommandTyped<RenderCommandType::SetPipeline>
 	{
 		Pipeline pipeline;
-
-		RenderCommandSetPipeline() : RenderCommand(RenderCommandType::SetPipeline) {}
 	};
 
+	struct RenderCommandBeginRenderPass : public RenderCommandTyped<RenderCommandType::BeginRenderPass>
+	{
+		RenderPass rp;
+	};
 
+	struct RenderCommandEndRenderPass: public RenderCommandTyped<RenderCommandType::EndRenderPass>
+	{
+		u8 nothing;
+	};
+
+	struct RenderCommandBarrier : public RenderCommandTyped<RenderCommandType::Barrier>
+	{
+		std::vector<ResourceBarrier> barriers;
+	};
 
 
 	struct NewRenderCommandList
 	{
 	public:
-		void submit(RenderCommandDraw cmd)
+		// Note that internal will consume the command! (move)
+		// We don't explicitly use rvalue to simplify interface (avoid explicit std::move)
+		template <typename Command>
+		void submit(const Command& cmd)
 		{
-			auto storage = new RenderCommandDraw;
-			*storage = cmd;
+			// Future notes: Given that a command list is a hot code path. Consider grabbing memory from a custom allocator for command storage instead of using make_shared.
+			// We'll keep it simple until we come across performance issues for now
+			auto storage = std::make_shared<Command>();
+			*storage = std::move(cmd);	// Avoid potential expensive copies (e.g vector in 'Command')
+
+			// Compiler will warn us if Command is not a subclass of RenderCommand :)
 			m_cmds.push_back(storage);
 		}
 
-		std::vector<RenderCommand*> m_cmds;
+		const std::vector<std::shared_ptr<RenderCommand>>& get_commands() const { return m_cmds; };
+
+	private:
+		std::vector<std::shared_ptr<RenderCommand>> m_cmds;
 	};
+
+
 
 }

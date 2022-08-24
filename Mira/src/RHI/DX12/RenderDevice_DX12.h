@@ -17,9 +17,12 @@ namespace mira
 {
 	class RenderCommandList_DX12;
 	class SwapChain_DX12;
+	class CommandCompiler_DX12;
 
 	class RenderDevice_DX12 final : public RenderDevice
 	{
+		friend CommandCompiler_DX12;		// Compiler context requires read-access to API resources
+
 	public:
 		RenderDevice_DX12(ComPtr<ID3D12Device5> device, IDXGIAdapter* adapter, bool debug);
 		~RenderDevice_DX12();
@@ -59,7 +62,9 @@ namespace mira
 
 
 		// Reserve metadata for command recording
-		void allocate_command_list(CommandList handle);
+		void allocate_command_list(CommandList handle, QueueType queue = QueueType::Graphics);
+		void recycle_command_list(CommandList handle);
+
 
 		// Compile backend representation of the command list
 		void compile_command_list(CommandList handle, NewRenderCommandList list);
@@ -70,6 +75,7 @@ namespace mira
 			QueueType queue = QueueType::Graphics,
 			std::optional<SyncReceipt> incoming_sync = std::nullopt,				// Synchronize with prior to command list execution
 			std::optional<SyncReceipt> outgoing_sync = std::nullopt);			// Generate sync after command list execution
+
 
 
 		RenderCommandList* allocate_command_list(QueueType queue = QueueType::Graphics);
@@ -111,6 +117,47 @@ namespace mira
 		void init_rootsig();
 		std::vector<D3D12_STATIC_SAMPLER_DESC> grab_static_samplers();
 		DX12Queue* get_queue(QueueType type);
+		D3D12_COMMAND_LIST_TYPE get_command_list_type(QueueType queue);
+
+		// Helper for inserting/getting resources in an array-like manner
+		template <typename T>
+		static void try_insert(std::vector<std::optional<T>>& vec, const T& element, u32 index)
+		{
+			// resize if needed
+			if (vec.size() <= index)
+				vec.resize(vec.size() * 4);
+
+			assert(!vec[index].has_value());
+			vec[index] = element;
+		}
+
+		// move version
+		template <typename T>
+		static void try_insert_move(std::vector<std::optional<T>>& vec, T&& element, u32 index)
+		{
+			// resize if needed
+			if (vec.size() <= index)
+				vec.resize(vec.size() * 4);
+
+			assert(!vec[index].has_value());
+			vec[index] = std::move(element);
+		}
+
+		template <typename T>
+		static const T& try_get(const std::vector<std::optional<T>>& vec, u32 index)
+		{
+			assert(vec.size() > index);
+			assert(vec[index].has_value());
+			return *(vec[index]);
+		}
+
+		template <typename T>
+		static T& try_get(std::vector<std::optional<T>>& vec, u32 index)
+		{
+			assert(vec.size() > index);
+			assert(vec[index].has_value());
+			return *(vec[index]);
+		}
 
 
 	private:
@@ -166,8 +213,25 @@ namespace mira
 
 		struct CommandList_Storage
 		{
+			std::unique_ptr<CommandCompiler_DX12> compiler;
 			bool is_compiled{ false };
+		};
 
+		struct CommandAtorAndList
+		{
+			ComPtr<ID3D12CommandAllocator> ator;
+			ComPtr<ID3D12GraphicsCommandList4> list;
+
+			void reset()
+			{
+				ator->Reset();
+				list->Reset(ator.Get(), nullptr);
+			}
+
+			void close()
+			{
+				list->Close();
+			}
 		};
 
 		struct SyncPrimitive
@@ -194,51 +258,27 @@ namespace mira
 		std::vector<std::optional<TextureView_Storage>> m_texture_views;
 		std::vector<std::optional<Pipeline_Storage>> m_pipelines;
 		std::vector<std::optional<RenderPass_Storage>> m_renderpasses;
-		std::vector<std::optional<CommandList_Storage>> m_command_lists;
+
+		std::vector<std::optional<CommandList_Storage>> m_command_lists;		
+		std::queue<CommandAtorAndList> m_recycled_ator_and_list;
 
 		std::vector<std::optional<SyncPrimitive>> m_syncs;		
 		std::queue<SyncPrimitive> m_recycled_syncs;
-
 
 		// Important that this is destructed before resources and descriptor managers (need to free underlying texture)
 		std::unique_ptr<SwapChain_DX12> m_swapchain;
 
 
+
+
+
+
+
 		// Reuse existing command allocators
 		std::queue<std::unique_ptr<RenderCommandList_DX12>> m_cmd_list_pool_direct, m_cmd_list_pool_compute, m_cmd_list_pool_copy;
 		std::unordered_map<RenderCommandList_DX12*, std::unique_ptr<RenderCommandList_DX12>> m_cmd_lists_in_play;
-
-
-
-
 	};
 		
-	// Helper for inserting/getting resources in an array-like manner
-	template <typename T>
-	void try_insert(std::vector<std::optional<T>>& vec, const T& element, u32 index)
-	{
-		// resize if needed
-		if (vec.size() <= index)
-			vec.resize(vec.size() * 4);
 
-		assert(!vec[index].has_value());
-		vec[index] = element;
-	}
-
-	template <typename T>
-	const T& try_get(const std::vector<std::optional<T>>& vec, u32 index)
-	{
-		assert(vec.size() > index);
-		assert(vec[index].has_value());
-		return *(vec[index]);
-	}
-
-	template <typename T>
-	T& try_get(std::vector<std::optional<T>>& vec, u32 index)
-	{
-		assert(vec.size() > index);
-		assert(vec[index].has_value());
-		return *(vec[index]);
-	}
 }
 

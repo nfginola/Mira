@@ -52,9 +52,19 @@ namespace mira
 
 
 
+		/*
+			Motivation for why allocation and compilation of a command list is exposed:
+				The expected use case is that the application (on a single thread) allocates multiple metadata for recording multiple lists (a single metadata likely maps to allocator + list pair).
+				This means that all the data to be processed has been grabbed from various shared data structures and can be dealt with in parallel.
+
+				For example, you have a list of { CommandListHandle, RenderCommandList }, the calling user can appropriately ration
+				a chunk of such pairs from the list to various threads for compilation (e.g a Job System).
+
+				Each compilation only touches data allocated and assigned to CommandListHandle.
+		*/
 
 		// Reserve metadata for command recording
-		virtual void allocate_command_list(CommandList handle) = 0;
+		virtual void allocate_command_list(CommandList handle, QueueType queue = QueueType::Graphics) = 0;
 
 		// Compile backend representation of the command list
 		virtual void compile_command_list(CommandList handle, NewRenderCommandList list) = 0;
@@ -65,6 +75,8 @@ namespace mira
 			QueueType queue = QueueType::Graphics,
 			std::optional<SyncReceipt> incoming_sync = std::nullopt,				// Synchronize with prior to command list execution
 			std::optional<SyncReceipt> outgoing_sync = std::nullopt) = 0;			// Generate sync after command list execution
+
+		virtual void recycle_command_list(CommandList handle) = 0;
 
 
 
