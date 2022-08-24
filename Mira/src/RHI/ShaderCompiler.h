@@ -3,6 +3,9 @@
 
 namespace mira
 {
+	/*
+		Plan is to only support DXC anyways. Should we keep this interface?
+	*/
 	class ShaderCompiler
 	{
 	public:

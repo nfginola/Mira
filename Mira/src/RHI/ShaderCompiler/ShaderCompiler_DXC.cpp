@@ -1,6 +1,9 @@
 #include "ShaderCompiler_DXC.h"
 #include <dxcapi.h>
 
+template <typename T>
+using ComPtr = Microsoft::WRL::ComPtr<T>;
+
 namespace mira
 {
 	ShaderCompiler_DXC::ShaderCompiler_DXC(ShaderModel model) :

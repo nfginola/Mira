@@ -1,15 +1,24 @@
 #include "Application.h"
+#include "RHI/ShaderCompiler/ShaderCompiler_DXC.h"
 
 #include "RHI/DX12/RenderDevice_DX12.h"
 #include "RHI/DX12/RenderBackend_DX12.h"
-#include "RHI/DX12/ShaderCompiler_DXC.h"
 #include "RHI/PipelineBuilder.h"
 #include "Window/Window.h"
 
 #include "Handles/HandleAllocator.h"
 
+#include "Rendering/Renderer.h"
+
+#include "Memory/BumpAllocator.h"
+
 Application::Application()
 {
+	mira::BumpAllocator bump(512);
+
+	auto a1 = bump.allocate(29, 0);
+	auto a2 = bump.allocate(64, 4);
+
 	const UINT c_width = 1600;
 	const UINT c_height = 900;
 
@@ -52,6 +61,18 @@ Application::Application()
 			.append_rt_format(mira::ResourceFormat::RGBA_8_UNORM)
 			.build());
 	}
+
+	/*
+		Notes for later:
+
+			When we design the higher level abstractions (not RHI anymore, but Graphics),
+			we should create a DeferredGarbageBin class to pass around to various classes that need to delete something!
+
+			This way, managers don't need to worry about frames in flight. Rather, upon deletion request, we push it into the DeferredGarbageBin which
+			in turn is handled per frame.
+
+			This also means that the Garbage Bin is to be used by a single thread!
+	*/
 
 	while (m_window->is_alive())
 	{

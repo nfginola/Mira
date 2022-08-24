@@ -1,6 +1,6 @@
 #pragma once
-#include "DX12CommonIncludes.h"
 #include "../ShaderCompiler.h"
+#include <wrl/client.h>
 
 struct IDxcLibrary;
 struct IDxcUtils;
@@ -26,10 +26,10 @@ namespace mira
 	private:
 		ShaderModel m_shader_model;
 
-		ComPtr<IDxcLibrary> m_library;
-		ComPtr<IDxcUtils> m_utils;
-		ComPtr<IDxcCompiler> m_compiler;
-		ComPtr<IDxcIncludeHandler> m_def_inc_hdlr;
+		Microsoft::WRL::ComPtr<IDxcLibrary> m_library;
+		Microsoft::WRL::ComPtr<IDxcUtils> m_utils;
+		Microsoft::WRL::ComPtr<IDxcCompiler> m_compiler;
+		Microsoft::WRL::ComPtr<IDxcIncludeHandler> m_def_inc_hdlr;
 
 	};
 }
