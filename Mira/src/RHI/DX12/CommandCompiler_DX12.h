@@ -19,6 +19,7 @@ namespace mira
 		void compile(const RenderCommandBeginRenderPass& cmd);
 		void compile(const RenderCommandEndRenderPass& cmd);
 		void compile(const RenderCommandBarrier& cmd);
+		void compile(const RenderCommandCopyBuffer& cmd);
 
 	private:
 		const RenderDevice_DX12* m_dev;

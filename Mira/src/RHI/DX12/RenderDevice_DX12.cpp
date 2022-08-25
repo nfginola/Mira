@@ -532,6 +532,11 @@ namespace mira
 				res.compiler->compile(*static_cast<RenderCommandBarrier*>(cmd.get()));
 				break;
 			}
+			case RenderCommandCopyBuffer::TYPE:
+			{
+				res.compiler->compile(*static_cast<RenderCommandCopyBuffer*>(cmd.get()));
+				break;
+			}
 			default:
 				assert(false);
 			}

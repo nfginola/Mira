@@ -9,12 +9,15 @@ namespace mira
 	enum class RenderCommandType
 	{
 		None,
+
 		Draw,
 		SetPipeline,
 		BeginRenderPass,
 		EndRenderPass,
 		Barrier,
-		UpdateShaderArgs
+		UpdateShaderArgs,
+
+		CopyBuffer
 	};
 
 	struct RenderCommand
@@ -93,6 +96,21 @@ namespace mira
 
 		RenderCommandBarrier() = default;
 		RenderCommandBarrier& append(const ResourceBarrier& barr) { barriers.push_back(barr); return *this;  }
+	};
+
+	struct RenderCommandCopyBuffer : public RenderCommandTyped<RenderCommandType::CopyBuffer>
+	{
+		Buffer src, dst;
+		u64 src_offset{ 0 };
+		u64 dst_offset{ 0 };
+		u64 size{ 0 };
+
+		RenderCommandCopyBuffer() = default;
+		RenderCommandCopyBuffer(Buffer src_in, u64 src_offset_in, Buffer dst_in, u64 dst_offset_in, u64 size_in) :
+			src(src_in),
+			dst(dst_in),
+			dst_offset(dst_offset_in),
+			size(size_in) {}
 	};
 
 

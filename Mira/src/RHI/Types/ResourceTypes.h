@@ -80,10 +80,17 @@ namespace mira
 	struct BufferDesc
 	{
 		u32 size{ 0 };
-		u32 alignment{ 0 };
-
 		MemoryType memory_type{ MemoryType::Default };
+
 		UsageIntent usage{ UsageIntent::None };
+		u32 alignment{ 0 };
+		
+		BufferDesc() = default;
+		BufferDesc(u32 size_in, MemoryType memory_type_in, UsageIntent usage_in = UsageIntent::None, u32 alignment_in = 0) :
+			size(size_in),
+			memory_type(memory_type_in),
+			usage(usage_in),
+			alignment(alignment_in) {}
 	};
 
 	struct TextureDesc

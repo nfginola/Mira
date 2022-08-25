@@ -21,17 +21,18 @@ Application::Application()
 	auto be_dx = std::make_unique<mira::RenderBackend_DX12>(true);
 	auto rd = be_dx->create_device();
 
-	// Create swapchain (requires at least 2 buffers)
-	mira::SwapChain* sc = rd->create_swapchain(m_window->get_hwnd(), 2);
-
-	mira::Texture bb_textures[]{ sc->get_buffer(0), sc->get_buffer(1) };
-
-	// Create views and renderpasses for swapchain backbuffer
+	std::array<mira::Texture, 2> bb_textures;
 	std::array<mira::TextureView, 2> bb_rts;
 	std::array<mira::RenderPass, 2> bb_rps;
 
+	// Create swapchain (requires at least 2 buffers)
+	mira::SwapChain* sc = rd->create_swapchain(m_window->get_hwnd(), 2);
+
+	// Create backbuffer renderpasses
 	for (u32 i = 0; i < bb_rps.size(); ++i)
 	{
+		bb_textures[i] = sc->get_buffer(i);
+
 		bb_rts[i] = rd->create_view(bb_textures[i],
 			mira::TextureViewDesc(
 				mira::ViewType::RenderTarget,

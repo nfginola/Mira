@@ -149,6 +149,7 @@ copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(Tar
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Rendering\GPUGarbageBin.cpp" />
     <ClCompile Include="src\Rendering\MeshManager.cpp" />
     <ClCompile Include="src\Memory\BlockAllocator.cpp" />
     <ClCompile Include="src\Memory\VirtualBlockAllocator.cpp" />
@@ -173,6 +174,7 @@ copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(Tar
     <ClCompile Include="vendor\D3D12MemoryAllocator\src\D3D12MemAlloc.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Rendering\GPUGarbageBin.h" />
     <ClInclude Include="src\Rendering\MeshManager.h" />
     <ClInclude Include="src\Memory\BlockAllocator.h" />
     <ClInclude Include="src\Memory\BumpAllocator.h" />

@@ -36,6 +36,13 @@ namespace mira
 			return m_heap_start + offset;
 		}
 
+		// { memory, offset from base } 
+		[[nodiscard]] std::pair<u8*, u64> allocate_with_offset(u64 size, u16 alignment = 4)
+		{
+			u64 offset = m_vator.allocate(size, alignment);
+			return { m_heap_start + offset, offset };
+		}
+
 		void clear()
 		{
 			m_vator.clear();

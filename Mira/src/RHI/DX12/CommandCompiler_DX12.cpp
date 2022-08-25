@@ -106,4 +106,12 @@ namespace mira
 		m_barriers_per_submission.push_back(std::move(barrs));
 		m_list->ResourceBarrier((u32)m_barriers_per_submission.back().size(), m_barriers_per_submission.back().data());
 	}
+
+	void CommandCompiler_DX12::compile(const RenderCommandCopyBuffer& cmd)
+	{
+		auto src = m_dev->get_api_buffer(cmd.src);
+		auto dst = m_dev->get_api_buffer(cmd.dst);
+
+		m_list->CopyBufferRegion(src, cmd.src_offset, dst, cmd.dst_offset, cmd.size);
+	}
 }
