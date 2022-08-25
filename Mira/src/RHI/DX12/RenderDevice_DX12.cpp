@@ -58,13 +58,13 @@ namespace mira
 		}
 	}
 
-	SwapChain* RenderDevice_DX12::create_swapchain(void* hwnd, std::span<Texture> swapchain_buffer_handles)
+	SwapChain* RenderDevice_DX12::create_swapchain(void* hwnd, u8 num_buffers)
 	{
-		m_swapchain = std::make_unique<SwapChain_DX12>(this, (HWND)hwnd, swapchain_buffer_handles, m_debug_on);
+		m_swapchain = std::make_unique<SwapChain_DX12>(this, (HWND)hwnd, num_buffers, m_debug_on);
 		return m_swapchain.get();
 	}
 
-	void RenderDevice_DX12::create_buffer(Buffer handle, const BufferDesc& desc)
+	Buffer RenderDevice_DX12::create_buffer(const BufferDesc& desc)
 	{
 		HRESULT hr{ S_OK };
 
@@ -93,11 +93,13 @@ namespace mira
 
 		hr = m_dma->CreateResource(&ad, &rd, init_state, nullptr, storage.alloc.GetAddressOf(), IID_PPV_ARGS(storage.resource.GetAddressOf()));
 		HR_VFY(hr);
-
+		
+		auto handle = m_rhp.allocate<Buffer>();
 		try_insert(m_buffers, storage, get_slot(handle.handle));
+		return handle;
 	}
 
-	void RenderDevice_DX12::create_texture(Texture handle, const TextureDesc& desc)
+	Texture RenderDevice_DX12::create_texture(const TextureDesc& desc)
 	{
 		HRESULT hr{ S_OK };
 
@@ -129,10 +131,12 @@ namespace mira
 		hr = m_dma->CreateResource(&ad, &rd, init_state, nullptr, storage.alloc.GetAddressOf(), IID_PPV_ARGS(storage.resource.GetAddressOf()));
 		HR_VFY(hr);
 
+		auto handle = m_rhp.allocate<Texture>();
 		try_insert(m_textures, storage, get_slot(handle.handle));
+		return handle;
 	}
 
-	void RenderDevice_DX12::create_graphics_pipeline(Pipeline handle, const GraphicsPipelineDesc& desc)
+	Pipeline RenderDevice_DX12::create_graphics_pipeline(const GraphicsPipelineDesc& desc)
 	{
 		assert(!desc.vs->blob.empty() && !desc.ps->blob.empty());
 		HRESULT hr{ S_OK };
@@ -147,10 +151,13 @@ namespace mira
 		storage.desc = desc;
 		storage.topology = to_internal_topology(desc.topology, desc.num_control_patches);
 		storage.pipeline = pso;
+
+		auto handle = m_rhp.allocate<Pipeline>();
 		try_insert(m_pipelines, storage, get_slot(handle.handle));
+		return handle;
 	}
 
-	void RenderDevice_DX12::create_renderpass(RenderPass handle, const RenderPassDesc& desc)
+	RenderPass RenderDevice_DX12::create_renderpass(const RenderPassDesc& desc)
 	{
 		//auto storage = std::make_shared<RenderPass_Storage>();
 		//storage->desc = desc;
@@ -190,7 +197,9 @@ namespace mira
 			storage.depth_stencil = depth_api;
 		}
 
+		auto handle = m_rhp.allocate<RenderPass>();
 		try_insert(m_renderpasses, storage, get_slot(handle.handle));
+		return handle;
 	}
 
 	void RenderDevice_DX12::free_buffer(Buffer handle)
@@ -198,6 +207,7 @@ namespace mira
 		auto& res = try_get(m_buffers, get_slot(handle.handle));
 		
 		m_buffers[get_slot(handle.handle)] = std::nullopt;
+		m_rhp.free(handle);
 	}
 
 	void RenderDevice_DX12::free_texture(Texture handle)
@@ -205,16 +215,22 @@ namespace mira
 		auto& res = try_get(m_textures, get_slot(handle.handle));
 
 		m_textures[get_slot(handle.handle)] = std::nullopt;
+		m_rhp.free(handle);
+
 	}
 
 	void RenderDevice_DX12::free_pipeline(Pipeline handle)
 	{
 		m_pipelines[get_slot(handle.handle)] = std::nullopt;
+		m_rhp.free(handle);
+
 	}
 
 	void RenderDevice_DX12::free_renderpass(RenderPass handle)
 	{
 		m_renderpasses[get_slot(handle.handle)] = std::nullopt;
+		m_rhp.free(handle);
+
 	}
 
 	void RenderDevice_DX12::free_view(BufferView handle)
@@ -223,6 +239,8 @@ namespace mira
 		m_descriptor_mgr->free(&res.view);
 
 		m_buffer_views[get_slot(handle.handle)] = std::nullopt;
+		m_rhp.free(handle);
+
 	}
 
 	void RenderDevice_DX12::free_view(TextureView handle)
@@ -231,9 +249,11 @@ namespace mira
 		m_descriptor_mgr->free(&res.view);
 
 		m_texture_views[get_slot(handle.handle)] = std::nullopt;
+		m_rhp.free(handle);
+
 	}
 	
-	void RenderDevice_DX12::create_view(BufferView handle, Buffer buffer, const BufferViewDesc& desc)
+	BufferView RenderDevice_DX12::create_view(Buffer buffer, const BufferViewDesc& desc)
 	{
 		assert(desc.view != ViewType::None);
 		assert(desc.view != ViewType::DepthStencil);
@@ -301,11 +321,12 @@ namespace mira
 			assert(false);
 		}
 
+		auto handle = m_rhp.allocate<BufferView>();
 		try_insert(m_buffer_views, BufferView_Storage(buffer, desc.view, view_desc), get_slot(handle.handle));
-
+		return handle;
 	}
 
-	void RenderDevice_DX12::create_view(TextureView handle, Texture texture, const TextureViewDesc& desc)
+	TextureView RenderDevice_DX12::create_view(Texture texture, const TextureViewDesc& desc)
 	{
 		assert(desc.view != ViewType::None);
 		assert(desc.view != ViewType::Constant);
@@ -346,7 +367,9 @@ namespace mira
 			assert(false);
 		}
 
+		auto handle = m_rhp.allocate<TextureView>();
 		try_insert(m_texture_views, TextureView_Storage(texture, desc.view, view_desc), get_slot(handle.handle));
+		return handle;
 	}
 	
 
@@ -357,6 +380,8 @@ namespace mira
 		
 		// mark as empty
 		m_syncs[get_slot(receipt.handle)] = std::nullopt;
+		m_rhp.free(receipt);
+
 	}
 
 	u8* RenderDevice_DX12::map(Buffer handle, u32 subresource, std::pair<u32, u32> read_range)
@@ -422,7 +447,7 @@ namespace mira
 		return (u32)res.view.index_offset_from_base();
 	}
 
-	void RenderDevice_DX12::allocate_command_list(CommandList handle, QueueType queue)
+	CommandList RenderDevice_DX12::allocate_command_list(QueueType queue)
 	{
 		CommandList_Storage storage{};
 
@@ -454,7 +479,9 @@ namespace mira
 			storage.compiler = std::make_unique<CommandCompiler_DX12>(this, ator, cmdl, queue);
 		}
 
+		auto handle = m_rhp.allocate<CommandList>();
 		try_insert_move(m_command_lists, std::move(storage), get_slot(handle.handle));
+		return handle;
 	}
 
 	void RenderDevice_DX12::recycle_command_list(CommandList handle)
@@ -468,6 +495,7 @@ namespace mira
 		m_recycled_ator_and_list.push(storage);
 	
 		m_command_lists[get_slot(handle.handle)] = std::nullopt;
+		m_rhp.free(handle);
 	}
 
 	void RenderDevice_DX12::compile_command_list(CommandList handle, RenderCommandList list)
@@ -512,7 +540,7 @@ namespace mira
 		res.is_compiled = true;
 	}
 
-	void RenderDevice_DX12::submit_command_lists(std::span<CommandList> lists, QueueType queue, std::optional<SyncReceipt> incoming_sync, std::optional<SyncReceipt> outgoing_sync)
+	std::optional<SyncReceipt> RenderDevice_DX12::submit_command_lists(std::span<CommandList> lists, QueueType queue, std::optional<SyncReceipt> incoming_sync, bool generate_sync)
 	{
 		// verify that the submitted lists are compiled
 		ID3D12CommandList* cmdls[16];
@@ -540,7 +568,7 @@ namespace mira
 
 		// Generate outgoing sync
 		std::optional<SyncReceipt> sync_receipt{ std::nullopt };
-		if (outgoing_sync.has_value())
+		if (generate_sync)
 		{
 			SyncPrimitive sync{};
 
@@ -558,8 +586,10 @@ namespace mira
 
 			curr_queue->insert_signal(sync.fence);
 
-			try_insert(m_syncs, std::move(sync), get_slot(outgoing_sync->handle));
+			auto sync_receipt = m_rhp.allocate<SyncReceipt>();
+			try_insert(m_syncs, std::move(sync), get_slot(sync_receipt.handle));
 		}
+		return sync_receipt;
 	}
 
 
@@ -642,13 +672,15 @@ namespace mira
 		}
 	}
 
-	void RenderDevice_DX12::register_swapchain_texture(ComPtr<ID3D12Resource> texture, Texture handle)
+	Texture RenderDevice_DX12::register_swapchain_texture(ComPtr<ID3D12Resource> texture)
 	{
 		Texture_Storage storage{};
 		storage.resource = texture;
 		auto desc = texture->GetDesc();
 
+		auto handle = m_rhp.allocate<Texture>();
 		try_insert(m_textures, storage, get_slot(handle.handle));
+		return handle;
 	}
 
 	void RenderDevice_DX12::set_clear_color(Texture tex, const std::array<float, 4>& clear_color)

@@ -9,6 +9,8 @@
 #include <functional>
 #include <optional>
 
+#include "../../Handles/HandleAllocator.h"
+
 namespace D3D12MA { class Allocator; class Allocation; }
 class DX12DescriptorManager;
 class DX12Queue;
@@ -27,14 +29,14 @@ namespace mira
 		RenderDevice_DX12(ComPtr<ID3D12Device5> device, IDXGIAdapter* adapter, bool debug);
 		~RenderDevice_DX12();
 
-		SwapChain* create_swapchain(void* hwnd, std::span<Texture> swapchain_buffer_handles);
+		SwapChain* create_swapchain(void* hwnd, u8 num_buffers);
 
-		void create_buffer(Buffer handle, const BufferDesc& desc);
-		void create_texture(Texture handle, const TextureDesc& desc);
-		void create_graphics_pipeline(Pipeline handle, const GraphicsPipelineDesc& desc);
-		void create_renderpass(RenderPass handle, const RenderPassDesc& desc);
-		void create_view(BufferView handle, Buffer buffer, const BufferViewDesc& desc);
-		void create_view(TextureView handle, Texture texture, const TextureViewDesc& desc);
+		Buffer create_buffer(const BufferDesc& desc);
+		Texture create_texture(const TextureDesc& desc);
+		Pipeline create_graphics_pipeline(const GraphicsPipelineDesc& desc);
+		RenderPass create_renderpass(const RenderPassDesc& desc);
+		BufferView create_view(Buffer buffer, const BufferViewDesc& desc);
+		TextureView create_view(Texture texture, const TextureViewDesc& desc);
 
 		void free_buffer(Buffer handle);
 		void free_texture(Texture handle);
@@ -46,17 +48,17 @@ namespace mira
 		void recycle_command_list(CommandList handle);
 
 		// Reserve metadata for command recording
-		void allocate_command_list(CommandList handle, QueueType queue = QueueType::Graphics);
+		CommandList allocate_command_list(QueueType queue = QueueType::Graphics);
 
 		// Compile backend representation of the command list
 		void compile_command_list(CommandList handle, RenderCommandList list);
 
 		// Submit a compiled command list
-		void submit_command_lists(
+		std::optional<SyncReceipt> submit_command_lists(
 			std::span<CommandList> lists,
 			QueueType queue = QueueType::Graphics,
 			std::optional<SyncReceipt> incoming_sync = std::nullopt,				// Synchronize with prior to command list execution
-			std::optional<SyncReceipt> outgoing_sync = std::nullopt);				// Generate sync after command list execution
+			bool generate_sync = false);				// Generate sync after command list execution
 
 		u32 get_global_descriptor(BufferView view) const;
 		u32 get_global_descriptor(TextureView view) const;
@@ -103,7 +105,7 @@ namespace mira
 
 		ID3D12CommandQueue* get_queue(D3D12_COMMAND_LIST_TYPE type);
 
-		void register_swapchain_texture(ComPtr<ID3D12Resource> texture, Texture handle);
+		Texture register_swapchain_texture(ComPtr<ID3D12Resource> texture);
 		void set_clear_color(Texture tex, const std::array<float, 4>& clear_color);
 
 			
@@ -206,6 +208,8 @@ namespace mira
 
 		ComPtr<ID3D12RootSignature> m_common_rsig;
 		std::unique_ptr<DX12DescriptorManager> m_descriptor_mgr;
+
+		HandleAllocator m_rhp;
 
 		std::vector<std::optional<Buffer_Storage>> m_buffers;
 		std::vector<std::optional<Texture_Storage>> m_textures;

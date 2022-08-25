@@ -8,6 +8,7 @@
 #include <array>
 #include <unordered_map>
 #include <variant>
+#include <span>
 
 using f32 = float;
 using f64 = double;

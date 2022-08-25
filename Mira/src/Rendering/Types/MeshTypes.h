@@ -12,6 +12,6 @@ namespace mira
 		Mesh mesh;
 		u32 num_submeshes{ 0 };
 
-		u32 manager_id{ -1 };
+		u32 manager_id{ UINT_MAX };
 	};
 }

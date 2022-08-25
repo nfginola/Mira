@@ -9,16 +9,14 @@ namespace mira
 	{
 	public:
 
-		// Pass buffer handles to attach swapchain buffers to.
-		// Number of passed handles is the number of buffers used for the swapchain!
-		virtual SwapChain* create_swapchain(void* hwnd, std::span<Texture> swapchain_buffer_handles) = 0;
+		virtual SwapChain* create_swapchain(void* hwnd, u8 num_buffers) = 0;
 
-		virtual void create_buffer(Buffer handle, const BufferDesc& desc) = 0;
-		virtual void create_texture(Texture handle, const TextureDesc& desc) = 0;
-		virtual void create_graphics_pipeline(Pipeline handle, const GraphicsPipelineDesc& desc) = 0;
-		virtual void create_renderpass(RenderPass handle, const RenderPassDesc& desc) = 0;
-		virtual void create_view(BufferView handle, Buffer buffer, const BufferViewDesc& desc) = 0;
-		virtual void create_view(TextureView handle, Texture texture, const TextureViewDesc& desc) = 0;
+		virtual Buffer create_buffer(const BufferDesc& desc) = 0;
+		virtual Texture create_texture(const TextureDesc& desc) = 0;
+		virtual Pipeline create_graphics_pipeline(const GraphicsPipelineDesc& desc) = 0;
+		virtual RenderPass create_renderpass(const RenderPassDesc& desc) = 0;
+		virtual BufferView create_view(Buffer buffer, const BufferViewDesc& desc) = 0;
+		virtual TextureView create_view(Texture texture, const TextureViewDesc& desc) = 0;
 
 		// Users determines when it is appropriate to free the resources (they may be in flight!)
 		virtual void free_buffer(Buffer handle) = 0;
@@ -42,28 +40,19 @@ namespace mira
 		*/
 
 		// Reserve metadata for command recording
-		virtual void allocate_command_list(CommandList handle, QueueType queue = QueueType::Graphics) = 0;
+		virtual CommandList allocate_command_list(QueueType queue = QueueType::Graphics) = 0;
 
 		// Compile backend representation of the command list
 		virtual void compile_command_list(CommandList handle, RenderCommandList list) = 0;
 
-		virtual void submit_command_lists(
+		virtual std::optional<SyncReceipt> submit_command_lists(
 			std::span<CommandList> lists,
 			QueueType queue = QueueType::Graphics,
 			std::optional<SyncReceipt> incoming_sync = std::nullopt,				// Synchronize with prior to command list execution
-			std::optional<SyncReceipt> outgoing_sync = std::nullopt) = 0;			// Generate sync after command list execution
+			bool generate_sync = false) = 0;												// Generate sync after command list execution
 
 
 		// Grab GPU-accessible resource handle
-		/*
-			Future notes:
-				If using multipe devices simultaneously, we somehow need to ensure that the global descriptors are identical.
-				(This matters only if we are filling GPU buffer data manually --> Filling index indirection manually)
-
-				Otherwise, we have to resolve render-device-specific global descriptors.
-				
-				Making sure that the global descriptors are identical across the simultaneously used render devices is likely easiest.
-		*/	
 		virtual u32 get_global_descriptor(BufferView view) const = 0;
 		virtual u32 get_global_descriptor(TextureView view) const = 0;
 

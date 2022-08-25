@@ -6,8 +6,6 @@
 #include "RHI/PipelineBuilder.h"
 #include "Window/Window.h"
 
-#include "Handles/HandleAllocator.h"
-
 #include "Rendering/Renderer.h"
 
 Application::Application()
@@ -19,37 +17,38 @@ Application::Application()
 	auto win_proc_callback = [this](HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) -> LRESULT { return this->window_proc(hwnd, uMsg, wParam, lParam); };
 	m_window = std::make_unique<Window>(GetModuleHandle(NULL), win_proc_callback, c_width, c_height);
 
-	mira::HandleAllocator rhp;
 	auto sclr = std::make_unique<mira::ShaderCompiler_DXC>();
 	auto be_dx = std::make_unique<mira::RenderBackend_DX12>(true);
 	auto rd = be_dx->create_device();
 
 	// Create swapchain (requires at least 2 buffers)
-	mira::Texture bb_textures[]{ rhp.allocate<mira::Texture>(), rhp.allocate<mira::Texture>() };
-	mira::SwapChain* sc = rd->create_swapchain(m_window->get_hwnd(), bb_textures);
+	mira::SwapChain* sc = rd->create_swapchain(m_window->get_hwnd(), 2);
+
+	mira::Texture bb_textures[]{ sc->get_buffer(0), sc->get_buffer(1) };
 
 	// Create views and renderpasses for swapchain backbuffer
-	mira::TextureView bb_rts[]{ rhp.allocate<mira::TextureView>(), rhp.allocate<mira::TextureView>() };
-	mira::RenderPass bb_rps[]{ rhp.allocate<mira::RenderPass>(), rhp.allocate<mira::RenderPass>() };
-	for (u32 i = 0; i < _countof(bb_rps); ++i)
+	std::array<mira::TextureView, 2> bb_rts;
+	std::array<mira::RenderPass, 2> bb_rps;
+
+	for (u32 i = 0; i < bb_rps.size(); ++i)
 	{
-		rd->create_view(bb_rts[i], bb_textures[i],
+		bb_rts[i] = rd->create_view(bb_textures[i],
 			mira::TextureViewDesc(
 				mira::ViewType::RenderTarget,
 				mira::TextureViewRange(mira::TextureViewDimension::Texture2D, mira::ResourceFormat::RGBA_8_UNORM)));
 
-		rd->create_renderpass(bb_rps[i], mira::RenderPassBuilder()
+		bb_rps[i] = rd->create_renderpass(mira::RenderPassBuilder()
 			.append_rt(bb_rts[i], mira::RenderPassBeginAccessType::Clear, mira::RenderPassEndingAccessType::Preserve)
 			.build());
 	}
 
 	// Create fullscreen blit pipeline
-	auto blit_pipe = rhp.allocate<mira::Pipeline>();
+	mira::Pipeline blit_pipe;
 	{
 		auto vs = sclr->compile_from_file("fullscreen_tri_vs.hlsl", mira::ShaderType::Vertex);
 		auto ps = sclr->compile_from_file("blit_ps.hlsl", mira::ShaderType::Pixel);
 
-		rd->create_graphics_pipeline(blit_pipe, mira::GraphicsPipelineBuilder()
+		blit_pipe = rd->create_graphics_pipeline(mira::GraphicsPipelineBuilder()
 			.set_shader(vs.get())
 			.set_shader(ps.get())
 			.append_rt_format(mira::ResourceFormat::RGBA_8_UNORM)
@@ -90,8 +89,8 @@ Application::Application()
 			.append(mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::RenderTarget, mira::ResourceState::Present, 0))
 		);
 
-		mira::CommandList list_hdls[]{ rhp.allocate<mira::CommandList>() };
-		rd->allocate_command_list(list_hdls[0]);
+		std::array<mira::CommandList, 1> list_hdls;
+		list_hdls[0] = rd->allocate_command_list();
 		rd->compile_command_list(list_hdls[0], list);
 		rd->submit_command_lists(list_hdls);
 
@@ -102,7 +101,6 @@ Application::Application()
 		rd->flush();
 
 		rd->recycle_command_list(list_hdls[0]);
-		rhp.free(list_hdls[0]);
 	}
 
 	rd->flush();

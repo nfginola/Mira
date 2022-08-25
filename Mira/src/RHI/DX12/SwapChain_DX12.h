@@ -9,13 +9,15 @@ namespace mira
 	class SwapChain_DX12 : public SwapChain
 	{
 	public:
-		SwapChain_DX12(RenderDevice_DX12* device, HWND hwnd, std::span<Texture> handles_to_attach_to, bool debug_on);
+		SwapChain_DX12(RenderDevice_DX12* device, HWND hwnd, u8 num_buffers, bool debug_on);
 		~SwapChain_DX12();
 
 		// Public interface
 		Texture get_next_draw_surface();
 		u8 get_next_draw_surface_idx();
 		void set_clear_color(const std::array<float, 4>& clear_color);
+
+		Texture get_buffer(u8 idx);
 
 		void present(bool vsync);
 

@@ -2,10 +2,10 @@
 
 namespace mira
 {
-	SwapChain_DX12::SwapChain_DX12(RenderDevice_DX12* device, HWND hwnd, std::span<Texture> handles_to_attach_to, bool debug_on) :
+	SwapChain_DX12::SwapChain_DX12(RenderDevice_DX12* device, HWND hwnd, u8 num_buffers, bool debug_on) :
 		m_device(device)
 	{
-		assert(handles_to_attach_to.size() >= 2);
+		assert(num_buffers >= 2);
 
 		HRESULT hr{ S_OK };
 
@@ -16,7 +16,7 @@ namespace mira
 		DXGI_SWAP_CHAIN_DESC1 scd{};
 		scd.Width = 0;
 		scd.Height = 0;
-		scd.BufferCount = (u32)handles_to_attach_to.size();
+		scd.BufferCount = num_buffers;
 		scd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;				// Requires manual gamma correction before presenting
 		scd.SampleDesc.Count = 1;
 		scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -50,13 +50,13 @@ namespace mira
 		hr = fac->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER);
 		HR_VFY(hr);
 
-		for (uint32_t i = 0; i < handles_to_attach_to.size(); ++i)
+		for (uint32_t i = 0; i < num_buffers; ++i)
 		{
 			ComPtr<ID3D12Resource> buffer;
 			hr = m_sc->GetBuffer(i, IID_PPV_ARGS(buffer.GetAddressOf()));
 			HR_VFY(hr);
-			m_device->register_swapchain_texture(buffer, handles_to_attach_to[i]);		// register textures
-			m_buffers.push_back(handles_to_attach_to[i]);
+
+			m_buffers.push_back(m_device->register_swapchain_texture(buffer));
 		}
 	}
 	
@@ -79,6 +79,13 @@ namespace mira
 		for (const auto& bb : m_buffers)
 			m_device->set_clear_color(bb, clear_color);
 	}
+
+	Texture SwapChain_DX12::get_buffer(u8 idx)
+	{
+		assert(idx < m_buffers.size());
+		return m_buffers[idx];
+	}
+
 	void SwapChain_DX12::present(bool vsync)
 	{
 		u32 flags{ 0 };
