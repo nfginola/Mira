@@ -105,12 +105,12 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)vendor\DirectXHeaders\include\directx;$(ProjectDir)vendor\D3D12MemoryAllocator\src;$(ProjectDir)vendor\DirectXShaderCompiler\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)vendor\DirectXHeaders\include\directx;$(ProjectDir)vendor\D3D12MemoryAllocator\src;$(ProjectDir)vendor\assimp-5.2.4\include;$(ProjectDir)vendor\DirectXShaderCompiler\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;$(ProjectDir)vendor\DirectXShaderCompiler\lib\$(Platform)\dxcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;$(ProjectDir)vendor\DirectXShaderCompiler\lib\$(Platform)\dxcompiler.lib;$(ProjectDir)vendor\assimp-5.2.4\lib\MinSizeRel\assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>mkdir "$(TargetDir)D3D12"
@@ -130,14 +130,14 @@ copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(Tar
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)vendor\DirectXHeaders\include\directx;$(ProjectDir)vendor\D3D12MemoryAllocator\src;$(ProjectDir)vendor\DirectXShaderCompiler\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)vendor\DirectXHeaders\include\directx;$(ProjectDir)vendor\D3D12MemoryAllocator\src;$(ProjectDir)vendor\assimp-5.2.4\include;$(ProjectDir)vendor\DirectXShaderCompiler\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;$(ProjectDir)vendor\DirectXShaderCompiler\lib\$(Platform)\dxcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;$(ProjectDir)vendor\DirectXShaderCompiler\lib\$(Platform)\dxcompiler.lib;$(ProjectDir)vendor\assimp-5.2.4\lib\MinSizeRel\assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>mkdir "$(TargetDir)D3D12"
@@ -149,6 +149,7 @@ copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(Tar
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Resource\AssimpImporter.cpp" />
     <ClCompile Include="src\Rendering\GPUGarbageBin.cpp" />
     <ClCompile Include="src\Rendering\MeshManager.cpp" />
     <ClCompile Include="src\Memory\BlockAllocator.cpp" />
@@ -174,6 +175,9 @@ copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(Tar
     <ClCompile Include="vendor\D3D12MemoryAllocator\src\D3D12MemAlloc.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Rendering\Types\MaterialTypes.h" />
+    <ClInclude Include="src\Resource\AssetResourceTypes.h" />
+    <ClInclude Include="src\Resource\AssimpImporter.h" />
     <ClInclude Include="src\Rendering\GPUGarbageBin.h" />
     <ClInclude Include="src\Rendering\MeshManager.h" />
     <ClInclude Include="src\Memory\BlockAllocator.h" />

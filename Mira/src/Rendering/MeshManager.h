@@ -14,23 +14,6 @@ namespace mira
 	class MeshManager
 	{
 	public:
-		enum class VertexAttribute
-		{
-			Position,
-			Normal,
-			UV,
-			Tangent
-		};
-
-		// Identifies a submesh
-		struct SubmeshMetadata
-		{
-			u32 vert_start{ 0 };
-			u32 vert_count{ 0 };
-			u32 index_start{ 0 };
-			u32 index_count{ 0 };
-		};
-
 		// Assumes the mesh data to be a concatenation of multiple submeshes
 		struct MeshSpecification
 		{
@@ -41,6 +24,7 @@ namespace mira
 		struct SizeSpecification
 		{
 			std::unordered_map<VertexAttribute, u32> buffer_sizes;
+			u32 index_buffer_size{ 0 };
 			u32 staging_size{ 0 };
 		};
 
@@ -50,6 +34,8 @@ namespace mira
 		MeshContainer load_mesh(const MeshSpecification& spec);
 
 		void free_mesh(Mesh handle);
+
+		Buffer get_index_buffer() const;
 
 		// Get GPU-indexable identifier for per attribute buffer
 		u32 get_attribute_buffer(VertexAttribute attr) const;
@@ -77,8 +63,8 @@ namespace mira
 			std::vector<Submesh_Storage> submeshes;
 
 			// virtual allocation md: { offset, size } 
-			std::unordered_map<VertexAttribute, std::pair<u32, u32>> allocation_md;		
-			std::pair<u32, u32> submeshes_md_allocation;
+			std::unordered_map<VertexAttribute, std::pair<u64, u64>> allocation_md;		
+			std::pair<u64, u64> submeshes_md_allocation;
 		};
 
 		// Non-interleaved vertex data.
@@ -107,6 +93,7 @@ namespace mira
 		std::vector<std::optional<Mesh_Storage>> m_meshes;
 
 		std::unordered_map<VertexAttribute, DeviceLocal_Buffer> m_device_local_buffers;
+		DeviceLocal_Buffer m_index_buffer;
 		DeviceLocal_Buffer m_submesh_metadata;
 		Staging_Buffer m_staging_buffer;
 

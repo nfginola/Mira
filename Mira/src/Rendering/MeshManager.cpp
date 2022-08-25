@@ -13,6 +13,7 @@ namespace mira
         constexpr u32 MAX_UNIQUE_SUBMESHES = 10'000;     // Assuming 5k unique submeshes per manager for now
 
         m_meshes.resize(1);
+
         
         // Create device-local non-interleaved vertex buffers
         for (auto [attr, size] : size_spec.buffer_sizes)
@@ -25,6 +26,19 @@ namespace mira
             buffer = m_rd->create_buffer(BufferDesc(size, MemoryType::Default));
             view = m_rd->create_view(buffer, BufferViewDesc(ViewType::ShaderResource, 0, get_stride(attr), count));
             ator = VirtualBlockAllocator(get_stride(attr), count);
+        }
+
+        // Create index buffer
+        {
+            auto& buffer = m_index_buffer.buffer;
+            auto& view = m_index_buffer.full_view;
+            auto& ator = m_index_buffer.ator;
+            const u32 stride = sizeof(u32);
+            const u32 count = size_spec.index_buffer_size / stride;
+
+            buffer = m_rd->create_buffer(BufferDesc(size_spec.index_buffer_size, MemoryType::Default));
+            view = m_rd->create_view(buffer, BufferViewDesc(ViewType::ShaderResource, 0, stride, count));
+            ator = VirtualBlockAllocator(stride, count);
         }
 
         // Create staging buffer
@@ -70,22 +84,38 @@ namespace mira
             storage.allocation_md[attr] = { dl_offset, total_size };
         }
 
-        // Upload mesh metadata
+        auto md_copy = spec.submeshes;
+        for (const auto& submesh : spec.submeshes)
         {
-            const u32 total_size = sizeof(SubmeshMetadata) * spec.submeshes.size();
-
             // Modify metadata for engine specific layout..
-            auto md_copy = spec.submeshes;
             // ...
             // ======================================================================== TO-DO
             // ...
+
+            Submesh_Storage sm_storage{};
+            sm_storage.md = submesh;
+
+            storage.submeshes.push_back(sm_storage);
+        }
+
+        // Upload mesh metadata
+        {
+            const u64 total_size = sizeof(SubmeshMetadata) * spec.submeshes.size();
 
             // Grab staging memory and copy
             auto [mem, staging_offset] = m_staging_buffer.ator.allocate_with_offset(total_size);
             std::memcpy(mem, md_copy.data(), total_size);
 
             // Grab device-local memory
-            const u32 dl_offset = m_submesh_metadata.ator.allocate(total_size);
+            const u64 dl_offset = m_submesh_metadata.ator.allocate(total_size);
+
+            // Assign global index based on device-local position
+            auto start = dl_offset;
+            for (auto& sm_storage : storage.submeshes)
+            {
+                sm_storage.global_idx = (u32)(start / sizeof(SubmeshMetadata));
+                start += sizeof(SubmeshMetadata);
+            }
 
             // GPU-GPU copy
             list.submit(RenderCommandCopyBuffer(
@@ -114,7 +144,7 @@ namespace mira
         // Return helper container
         MeshContainer container{};
         container.mesh = handle;
-        container.num_submeshes = spec.submeshes.size();
+        container.num_submeshes = (u32)spec.submeshes.size();
         container.manager_id = -1;                          // =============================== TO-DO
 
         return container;
@@ -142,6 +172,11 @@ namespace mira
         m_bin->push_deferred_deletion(deletion_func);
     }
 
+    Buffer MeshManager::get_index_buffer() const
+    {
+        return m_index_buffer.buffer;
+    }
+
     u32 MeshManager::get_attribute_buffer(VertexAttribute attr) const
     {
         return m_rd->get_global_descriptor(m_device_local_buffers.find(attr)->second.full_view);
@@ -157,7 +192,7 @@ namespace mira
         const auto& res = try_get(m_meshes, get_slot(mesh.handle));
         return res.submeshes[submesh].global_idx;
     }
-    const MeshManager::SubmeshMetadata& MeshManager::get_submesh_metadata(Mesh mesh, u32 submesh) const
+    const SubmeshMetadata& MeshManager::get_submesh_metadata(Mesh mesh, u32 submesh) const
     {
         const auto& res = try_get(m_meshes, get_slot(mesh.handle));
         return res.submeshes[submesh].md;
