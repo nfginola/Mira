@@ -8,8 +8,13 @@
 
 #include "Rendering/Renderer.h"
 
+#include "Resource/AssimpImporter.h"
+
 Application::Application()
 {
+	mira::AssimpImporter sponza("assets\\models\\Sponza_gltf\\glTF\\Sponza.gltf");
+	auto res = sponza.get_result();
+
 
 	const UINT c_width = 1600;
 	const UINT c_height = 900;

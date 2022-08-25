@@ -6,6 +6,31 @@
 
 namespace mira
 {
+	std::filesystem::path extract_material(const aiMaterial* mat, MaterialTextureType type)
+	{
+		aiReturn ret{ aiReturn_SUCCESS };
+		switch (type)
+		{
+		case MaterialTextureType::Diffuse:
+		{
+			aiString diffuse;
+			ret = mat->GetTexture(aiTextureType_DIFFUSE, 0, &diffuse);
+			assert(ret == aiReturn_SUCCESS);
+
+			return std::string(diffuse.C_Str());
+		}
+		case MaterialTextureType::Normal:
+		{
+			assert(false);
+			break;
+		}
+		default:
+			break;
+		}
+
+		return "";
+	}
+
 	AssimpImporter::AssimpImporter(const std::filesystem::path& path)
 	{
 		// Load assimp scene
@@ -106,85 +131,33 @@ namespace mira
 				submeshes.push_back(submesh_md);
 			}
 
+			// Resize standardized buffers
+			m_loaded_model->mesh.vertex_data[VertexAttribute::Position].resize(positions.size() * sizeof(positions[0]));
+			m_loaded_model->mesh.vertex_data[VertexAttribute::UV].resize(uvs.size() * sizeof(uvs[0]));
+			m_loaded_model->mesh.vertex_data[VertexAttribute::Normal].resize(normals.size() * sizeof(normals[0]));
+			m_loaded_model->mesh.vertex_data[VertexAttribute::Tangent].resize(tangents.size() * sizeof(tangents[0]));
+
 			// Copy to standardized buffers
-			std::copy(positions.begin(), positions.end(), std::back_inserter(m_loaded_model->mesh.vertex_data[VertexAttribute::Position]));
-			std::copy(uvs.begin(), uvs.end(), std::back_inserter(m_loaded_model->mesh.vertex_data[VertexAttribute::UV]));
-			std::copy(normals.begin(), normals.end(), std::back_inserter(m_loaded_model->mesh.vertex_data[VertexAttribute::Normal]));
-			std::copy(tangents.begin(), tangents.end(), std::back_inserter(m_loaded_model->mesh.vertex_data[VertexAttribute::Tangent]));
+			std::memcpy(m_loaded_model->mesh.vertex_data[VertexAttribute::Position].data(), positions.data(), positions.size() * sizeof(positions[0]));
+			std::memcpy(m_loaded_model->mesh.vertex_data[VertexAttribute::UV].data(), uvs.data(), uvs.size() * sizeof(uvs[0]));
+			std::memcpy(m_loaded_model->mesh.vertex_data[VertexAttribute::Normal].data(), normals.data(), normals.size() * sizeof(normals[0]));
+			std::memcpy(m_loaded_model->mesh.vertex_data[VertexAttribute::Tangent].data(), tangents.data(), tangents.size() * sizeof(tangents[0]));
 		}
 
-		// Handle material
+		// Sanity check
+		assert(submeshes.size() == submesh_to_material_idx.size());
+
+		// Extract material load data
+		const auto directory = path.parent_path().string();
+		for (auto mat_id : submesh_to_material_idx)
 		{
+			ImportedMaterial mat_md{};
+			const aiMaterial* material = scene->mMaterials[mat_id];
 			
+			mat_md.textures[MaterialTextureType::Diffuse] = directory + extract_material(material, MaterialTextureType::Diffuse).string();
 
+			// Save material
+			m_loaded_model->materials.push_back(mat_md);
 		}
-
-
-
-		//u32 num_meshes = scene->mNumMeshes;
-		//u32 num_materials = scene->mNumMaterials;
-		//u32 num_textures = scene->mNumTextures;
-
-		//// Get total amount of vertices
-		//u32 total_verts = 0;
-		//for (u32 i = 0; i < scene->mNumMeshes; ++i)
-		//	total_verts += scene->mMeshes[i]->mNumVertices;
-
-		//// Extract geometry data
-		//for (uint32_t mesh_idx = 0; mesh_idx < scene->mNumMeshes; ++mesh_idx)
-		//{
-		//	aiMesh* mesh = scene->mMeshes[mesh_idx];
-
-		//	// Assimp 'mesh' is translated to a submesh for this implementation
-		//	SubmeshMetadata submesh{};
-		//	uint32_t& vertex_start = submesh.vert_start;
-		//	uint32_t& vertex_count = submesh.vert_count;
-		//	uint32_t& index_start = submesh.index_start;
-		//	uint32_t& index_count = submesh.index_count;
-
-		//	ImportedMaterial material{};
-
-		//	vertex_start = (uint32_t)m_mesh.positions.size();
-		//	vertex_count = mesh->mNumVertices;
-		//	index_start = (uint32_t)m_mesh.indices.size();
-		//	index_count = 0;
-
-		//	// Pair each mesh with material
-		//	//submesh.mat_idx = mesh->mMaterialIndex;
-		//	submesh.mat_idx = original_to_new_idx[mesh->mMaterialIndex];
-
-		//	for (uint32_t face_idx = 0; face_idx < mesh->mNumFaces; ++face_idx)
-		//	{
-		//		const aiFace& face = mesh->mFaces[face_idx];
-		//		for (uint32_t index_idx = 0; index_idx < face.mNumIndices; ++index_idx)
-		//		{
-		//			m_mesh.indices.push_back(face.mIndices[index_idx]);
-
-		//			// add vertex start here to avoid adding vertex_start manually during rendering!
-		//			//m_mesh.indices.push_back(face.mIndices[index_idx] + vertex_start);		
-
-		//		}
-		//		index_count += face.mNumIndices;
-		//	}
-
-		//	for (uint32_t vert_idx = 0; vert_idx < mesh->mNumVertices; ++vert_idx)
-		//	{
-		//		m_mesh.positions.push_back({ mesh->mVertices[vert_idx].x, mesh->mVertices[vert_idx].y, mesh->mVertices[vert_idx].z });
-
-		//		if (mesh->HasTextureCoords(0))
-		//			m_mesh.uvs.push_back({ mesh->mTextureCoords[0][vert_idx].x, mesh->mTextureCoords[0][vert_idx].y });
-
-		//		if (mesh->HasNormals())
-		//			m_mesh.normals.push_back({ mesh->mNormals[vert_idx].x, mesh->mNormals[vert_idx].y, mesh->mNormals[vert_idx].z });
-
-		//		if (mesh->HasTangentsAndBitangents())
-		//		{
-		//			m_mesh.tangents.push_back({ mesh->mTangents[vert_idx].x, mesh->mTangents[vert_idx].y, mesh->mTangents[vert_idx].z });
-		//			m_mesh.bitangents.push_back({ mesh->mBitangents[vert_idx].x, mesh->mBitangents[vert_idx].y, mesh->mBitangents[vert_idx].z });
-		//		}
-		//	}
-
-		//	m_mesh.submeshes.push_back(submesh);
-		//}
 	}
 }

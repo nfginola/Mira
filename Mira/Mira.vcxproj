@@ -118,7 +118,11 @@ copy "$(ProjectDir)vendor\AgilitySDK\bin\$(Platform)\D3D12Core.dll" "$(TargetDir
 copy "$(ProjectDir)vendor\AgilitySDK\bin\$(Platform)\d3d12SDKLayers.dll" "$(TargetDir)D3D12\d3d12SDKLayers.dll"
 
 copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
-copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(TargetDir)dxil.dll"</Command>
+copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(TargetDir)dxil.dll"
+
+copy "$(ProjectDir)vendor\assimp-5.2.4\bin\MinSizeRel\assimp-vc143-mt.dll" "$(TargetDir)assimp-vc143-mt.dll"
+
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -145,7 +149,11 @@ copy "$(ProjectDir)vendor\AgilitySDK\bin\$(Platform)\D3D12Core.dll" "$(TargetDir
 copy "$(ProjectDir)vendor\AgilitySDK\bin\$(Platform)\d3d12SDKLayers.dll" "$(TargetDir)D3D12\d3d12SDKLayers.dll"
 
 copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
-copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(TargetDir)dxil.dll"</Command>
+copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(TargetDir)dxil.dll"
+
+copy "$(ProjectDir)vendor\assimp-5.2.4\bin\MinSizeRel\assimp-vc143-mt.dll" "$(TargetDir)assimp-vc143-mt.dll"
+
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
