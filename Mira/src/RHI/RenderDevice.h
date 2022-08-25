@@ -72,6 +72,9 @@ namespace mira
 
 		virtual void flush() = 0;
 
+		virtual u8* map(Buffer handle, u32 subresource = 0, std::pair<u32, u32> read_range = { 0, 0 }) = 0;
+		virtual void unmap(Buffer handle, u32 subresource = 0, std::pair<u32, u32> written_range = { 0, 0 }) = 0;
+
 		// Copies to a host-visible buffer
 		virtual void upload_to_buffer(Buffer buffer, u32 dst_offset, void* data, u32 size) = 0;
 

@@ -9,7 +9,7 @@ namespace mira
 		VirtualBumpAllocator() = default;
 		VirtualBumpAllocator(u64 size) : m_size(size) {}
 
-		u64 allocate(u64 size, u16 alignment = 4)
+		[[nodiscard]] u64 allocate(u64 size, u16 alignment = 4)
 		{
 			// Bump to aligned address
 			const u64 to_align = alignment == 0 ? 0 : alignment - (m_head % alignment);

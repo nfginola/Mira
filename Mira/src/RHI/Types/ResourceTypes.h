@@ -84,10 +84,6 @@ namespace mira
 
 		MemoryType memory_type{ MemoryType::Default };
 		UsageIntent usage{ UsageIntent::None };
-
-		// We should remove this
-		// If buffer is to be accessed as SRV/UAV, user expected to work with the buffer with a single stride
-		u32 stride{ 0 };
 	};
 
 	struct TextureDesc

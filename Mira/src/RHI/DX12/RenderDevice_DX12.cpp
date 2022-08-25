@@ -94,10 +94,6 @@ namespace mira
 		hr = m_dma->CreateResource(&ad, &rd, init_state, nullptr, storage.alloc.GetAddressOf(), IID_PPV_ARGS(storage.resource.GetAddressOf()));
 		HR_VFY(hr);
 
-		// Map memory if on upload heap
-		if (desc.memory_type == MemoryType::Upload)
-			storage.resource->Map(0, {}, (void**)&storage.mapped_resource);
-
 		try_insert(m_buffers, storage, get_slot(handle.handle));
 	}
 
@@ -361,6 +357,29 @@ namespace mira
 		
 		// mark as empty
 		m_syncs[get_slot(receipt.handle)] = std::nullopt;
+	}
+
+	u8* RenderDevice_DX12::map(Buffer handle, u32 subresource, std::pair<u32, u32> read_range)
+	{
+		auto& res = try_get(m_buffers, get_slot(handle.handle));
+
+		u8* mapped{ nullptr };
+
+		D3D12_RANGE range{};
+		range.Begin = read_range.first;
+		range.End = read_range.second;
+		res.resource->Map(subresource, &range, (void**)&mapped);
+		return mapped;
+	}
+
+	void RenderDevice_DX12::unmap(Buffer handle, u32 subresource, std::pair<u32, u32> written_range)
+	{
+		auto& res = try_get(m_buffers, get_slot(handle.handle));
+
+		D3D12_RANGE range{};
+		range.Begin = written_range.first;
+		range.End = written_range.second;
+		res.resource->Unmap(subresource, &range);
 	}
 
 	void RenderDevice_DX12::upload_to_buffer(Buffer buffer, u32 dst_offset, void* data, u32 size)

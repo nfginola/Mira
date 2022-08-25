@@ -64,6 +64,9 @@ namespace mira
 		void flush();
 		void wait_for_gpu(SyncReceipt receipt);
 
+
+		u8* map(Buffer handle, u32 subresource = 0, std::pair<u32, u32> read_range = { 0, 0 });
+		void unmap(Buffer handle, u32 subresource = 0, std::pair<u32, u32> written_range = { 0, 0 });
 		void upload_to_buffer(Buffer buffer, u32 dst_offset, void* data, u32 size);
 
 		
@@ -112,45 +115,7 @@ namespace mira
 		DX12Queue* get_queue(QueueType type);
 		D3D12_COMMAND_LIST_TYPE get_command_list_type(QueueType queue);
 
-		// Helper for inserting/getting resources in an array-like manner
-		template <typename T>
-		static void try_insert(std::vector<std::optional<T>>& vec, const T& element, u32 index)
-		{
-			// resize if needed
-			if (vec.size() <= index)
-				vec.resize(vec.size() * 4);
 
-			assert(!vec[index].has_value());
-			vec[index] = element;
-		}
-
-		// move version
-		template <typename T>
-		static void try_insert_move(std::vector<std::optional<T>>& vec, T&& element, u32 index)
-		{
-			// resize if needed
-			if (vec.size() <= index)
-				vec.resize(vec.size() * 4);
-
-			assert(!vec[index].has_value());
-			vec[index] = std::move(element);
-		}
-
-		template <typename T>
-		static const T& try_get(const std::vector<std::optional<T>>& vec, u32 index)
-		{
-			assert(vec.size() > index);
-			assert(vec[index].has_value());
-			return *(vec[index]);
-		}
-
-		template <typename T>
-		static T& try_get(std::vector<std::optional<T>>& vec, u32 index)
-		{
-			assert(vec.size() > index);
-			assert(vec[index].has_value());
-			return *(vec[index]);
-		}
 
 
 	private:

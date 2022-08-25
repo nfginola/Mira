@@ -11,7 +11,7 @@ namespace mira
 		~VirtualBlockAllocator();
 		
 		// Grabs contiguous blocks which fits at least the requested size
-		u64 allocate(u64 size);
+		[[nodiscard]] u64 allocate(u64 size);
 
 		// User needs to keep track of allocation size
 		void free(u64 offset, u64 size);

@@ -149,6 +149,8 @@ copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(Tar
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Rendering\MeshManager.cpp" />
+    <ClCompile Include="src\Memory\BlockAllocator.cpp" />
     <ClCompile Include="src\Memory\VirtualBlockAllocator.cpp" />
     <ClCompile Include="src\Rendering\Renderer.cpp" />
     <ClCompile Include="src\RHI\DX12\CommandCompiler_DX12.cpp" />
@@ -171,10 +173,13 @@ copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(Tar
     <ClCompile Include="vendor\D3D12MemoryAllocator\src\D3D12MemAlloc.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Rendering\MeshManager.h" />
+    <ClInclude Include="src\Memory\BlockAllocator.h" />
     <ClInclude Include="src\Memory\BumpAllocator.h" />
     <ClInclude Include="src\Memory\VirtualBlockAllocator.h" />
     <ClInclude Include="src\Rendering\Renderer.h" />
     <ClInclude Include="src\Rendering\RenderingTypes.h" />
+    <ClInclude Include="src\Rendering\Types\MeshTypes.h" />
     <ClInclude Include="src\RHI\DX12\CommandCompiler_DX12.h" />
     <ClInclude Include="src\Application.h" />
     <ClInclude Include="src\Handles\HandleAllocator.h" />

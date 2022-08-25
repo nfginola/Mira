@@ -3,6 +3,9 @@
 
 namespace mira
 {
+	/*
+		Building block for a pool allocator, which can be used independently as well.
+	*/
 	class BlockAllocator
 	{
 	public:
@@ -11,7 +14,7 @@ namespace mira
 		~BlockAllocator();
 
 		// Grabs contiguous blocks which fits at least the requested size
-		u8* allocate(u64 size);
+		[[nodiscard]] u8* allocate(u64 size);
 
 		// User needs to keep track of allocation size
 		void free(u64 offset, u64 size);
