@@ -149,6 +149,7 @@ copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(Tar
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Memory\VirtualBlockAllocator.cpp" />
     <ClCompile Include="src\Rendering\Renderer.cpp" />
     <ClCompile Include="src\RHI\DX12\CommandCompiler_DX12.cpp" />
     <ClCompile Include="src\Application.cpp" />
@@ -171,6 +172,7 @@ copy "$(ProjectDir)vendor\DirectXShaderCompiler\bin\$(Platform)\dxil.dll" "$(Tar
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Memory\BumpAllocator.h" />
+    <ClInclude Include="src\Memory\VirtualBlockAllocator.h" />
     <ClInclude Include="src\Rendering\Renderer.h" />
     <ClInclude Include="src\Rendering\RenderingTypes.h" />
     <ClInclude Include="src\RHI\DX12\CommandCompiler_DX12.h" />

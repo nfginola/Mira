@@ -8,32 +8,25 @@ namespace mira
 	public:
 		BumpAllocator() = default;
 
-		// Use externally managed memory
-		BumpAllocator(u8* memory, u64 size) :
+		BumpAllocator(u64 size, u8* memory = nullptr) :
 			m_vator(size),
 			m_size(size),
-			m_heap_start(memory),
-			m_heap_end(memory + size),
-			m_external_memory(true)
+			m_internally_managed_memory(memory == nullptr ? true : false)
 		{
+			if (m_internally_managed_memory)
+				m_heap_start = (u8*)std::malloc(size);
+			else
+				m_heap_start = memory;
+
+			m_heap_end = m_heap_start + size;
+
+			assert(m_heap_start != nullptr);
 			std::memset(m_heap_start, 0, size);
 		}
-
-		// Use internally managed memory
-		BumpAllocator(u64 size) :
-			m_vator(size),
-			m_size(size),
-			m_heap_start((u8*)std::malloc(size)),
-			m_heap_end(m_heap_start + size),
-			m_external_memory(false)
-		{
-			std::memset(m_heap_start, 0, size);
-		}
-
 
 		~BumpAllocator()
 		{
-			if (m_external_memory)
+			if (m_internally_managed_memory)
 				std::free(m_heap_start);
 		}
 
@@ -52,9 +45,10 @@ namespace mira
 		VirtualBumpAllocator m_vator;
 
 		u64 m_size{ 0 };
+		bool m_internally_managed_memory{ false };
+
 		u8* m_heap_start{ nullptr };
 		u8* m_heap_end{ nullptr };
-		bool m_external_memory{ false };
 	};
 }
 

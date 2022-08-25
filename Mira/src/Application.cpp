@@ -10,14 +10,8 @@
 
 #include "Rendering/Renderer.h"
 
-#include "Memory/BumpAllocator.h"
-
 Application::Application()
 {
-	mira::BumpAllocator bump(512);
-
-	auto a1 = bump.allocate(29, 0);
-	auto a2 = bump.allocate(64, 4);
 
 	const UINT c_width = 1600;
 	const UINT c_height = 900;

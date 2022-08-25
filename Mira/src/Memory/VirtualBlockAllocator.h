@@ -6,8 +6,9 @@ namespace mira
 	class VirtualBlockAllocator
 	{
 	public:	
-		VirtualBlockAllocator();
+		VirtualBlockAllocator() = default;
 		VirtualBlockAllocator(u32 block_size, u32 block_count);
+		~VirtualBlockAllocator();
 		
 		// Grabs contiguous blocks which fits at least the requested size
 		u64 allocate(u64 size);
@@ -16,11 +17,20 @@ namespace mira
 		void free(u64 offset, u64 size);
 
 	private:
+		static constexpr u8 STATE_AVAILABLE{ 0 };
+		static constexpr u8 STATE_OCCUPIED{ 1 };
+
+	private:
+		// Finds block start index to the requested contiguous blocks
+		u32 find_contiguous_blocks(u32 count);
+		void set_blocks_state(u32 offset, u32 count, u8 state);
+
+	private:
 		u64 m_total_size{ 0 };
 		u32 m_block_size{ 0 };
 		u32 m_block_count{ 0 };
 
-		// Track used blocks (one bit per block)
-		u8* m_ledger{ nullptr };
+		// Track used blocks
+		u8* m_block_states{ nullptr };
 	};
 }
