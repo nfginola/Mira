@@ -61,18 +61,6 @@ Application::Application()
 			.build());
 	}
 
-	/*
-		Notes for later:
-
-			When we design the higher level abstractions (not RHI anymore, but Graphics),
-			we should create a DeferredGarbageBin class to pass around to various classes that need to delete something!
-
-			This way, managers don't need to worry about frames in flight. Rather, upon deletion request, we push it into the DeferredGarbageBin which
-			in turn is handled per frame.
-
-			This also means that the Garbage Bin is to be used by a single thread!
-	*/
-
 	while (m_window->is_alive())
 	{
 		m_window->pump_messages();

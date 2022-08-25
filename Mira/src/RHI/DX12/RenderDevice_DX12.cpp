@@ -407,18 +407,6 @@ namespace mira
 		res.resource->Unmap(subresource, &range);
 	}
 
-	void RenderDevice_DX12::upload_to_buffer(Buffer buffer, u32 dst_offset, void* data, u32 size)
-	{
-		const auto& res = try_get(m_buffers, get_slot(buffer.handle));
-
-		// Ensure buffer is mappable
-		assert(res.mapped_resource != nullptr);
-
-		// Space can accomodate the copy
-		assert((res.desc.size - dst_offset) >= size);
-
-		std::memcpy(res.mapped_resource + dst_offset, data, size);
-	}
 
 	void RenderDevice_DX12::flush()
 	{

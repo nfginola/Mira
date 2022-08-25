@@ -10,10 +10,10 @@ namespace mira
     {
         assert(m_rd != nullptr);
 
-        constexpr u32 MAX_UNIQUE_SUBMESHES = 10'000;     // Assuming 5k unique submeshes per manager for now
-
         m_meshes.resize(1);
 
+        // Assuming a number of maximum unique submeshes per manager for now
+        constexpr u32 MAX_UNIQUE_SUBMESHES = 10'000;
         
         // Create device-local non-interleaved vertex buffers
         for (auto [attr, size] : size_spec.buffer_sizes)
