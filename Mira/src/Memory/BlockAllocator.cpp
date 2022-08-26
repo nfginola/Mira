@@ -9,14 +9,16 @@ namespace mira
 	{
 		const u64 total_size = (u64)block_size * block_count;
 		if (m_internally_managed_memory)
+		{
 			m_heap_start = (u8*)std::malloc(total_size);
+			std::memset(m_heap_start, 0, total_size);
+		}
 		else
 			m_heap_start = memory;
 
 		m_heap_end = m_heap_start + total_size;
 		
 		assert(m_heap_start != nullptr);
-		std::memset(m_heap_start, 0, total_size);
 	}
 
 	BlockAllocator::~BlockAllocator()

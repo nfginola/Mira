@@ -157,6 +157,7 @@ copy "$(ProjectDir)vendor\assimp-5.2.4\bin\MinSizeRel\assimp-vc143-mt.dll" "$(Ta
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Memory\RingBuffer.cpp" />
     <ClCompile Include="src\Memory\PoolAllocator.cpp" />
     <ClCompile Include="src\Rendering\GPUConstantManager.cpp" />
     <ClCompile Include="src\Resource\AssimpImporter.cpp" />
@@ -164,7 +165,6 @@ copy "$(ProjectDir)vendor\assimp-5.2.4\bin\MinSizeRel\assimp-vc143-mt.dll" "$(Ta
     <ClCompile Include="src\Rendering\MeshManager.cpp" />
     <ClCompile Include="src\Memory\BlockAllocator.cpp" />
     <ClCompile Include="src\Memory\VirtualBlockAllocator.cpp" />
-    <ClCompile Include="src\Rendering\Renderer.cpp" />
     <ClCompile Include="src\RHI\DX12\CommandCompiler_DX12.cpp" />
     <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\RHI\ShaderCompiler\ShaderCompiler_DXC.cpp" />
@@ -186,8 +186,10 @@ copy "$(ProjectDir)vendor\assimp-5.2.4\bin\MinSizeRel\assimp-vc143-mt.dll" "$(Ta
     <ClCompile Include="src\Memory\VirtualRingBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Memory\RingBuffer.h" />
     <ClInclude Include="src\Memory\PoolAllocator.h" />
     <ClInclude Include="src\Rendering\GPUConstantManager.h" />
+    <ClInclude Include="src\Rendering\Types\GPUConstantTypes.h" />
     <ClInclude Include="src\Rendering\Types\MaterialTypes.h" />
     <ClInclude Include="src\Resource\AssetResourceTypes.h" />
     <ClInclude Include="src\Resource\AssimpImporter.h" />
@@ -196,7 +198,6 @@ copy "$(ProjectDir)vendor\assimp-5.2.4\bin\MinSizeRel\assimp-vc143-mt.dll" "$(Ta
     <ClInclude Include="src\Memory\BlockAllocator.h" />
     <ClInclude Include="src\Memory\BumpAllocator.h" />
     <ClInclude Include="src\Memory\VirtualBlockAllocator.h" />
-    <ClInclude Include="src\Rendering\Renderer.h" />
     <ClInclude Include="src\Rendering\Types\MeshTypes.h" />
     <ClInclude Include="src\RHI\DX12\CommandCompiler_DX12.h" />
     <ClInclude Include="src\Application.h" />

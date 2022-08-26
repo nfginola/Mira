@@ -12,6 +12,8 @@ namespace mira
 		u64 allocate();
 		u64 pop();
 
+		u32 get_element_size() const { return m_element_size; }
+
 	private:
 		bool is_full() const;
 		bool is_empty() const;

@@ -46,10 +46,10 @@ namespace mira
 		// Get GPU-indexable identifier for mesh metadata buffer
 		u32 get_submesh_metadata_buffer() const;
 
-		// Get global index within mesh metadata buffer for this specific submesh
+		// Get global index within mesh metadata buffer for this specific submesh (useful for GPU-driven rendering: e.g Draw call generation on Compute)
 		u32 get_submesh_metadata_index(Mesh mesh, u32 submesh) const;
 
-		// Grab metadata on CPU-side
+		// Grab metadata on CPU-side (for CPU-side draw call generation)
 		const SubmeshMetadata& get_submesh_metadata(Mesh mesh, u32 submesh) const;
 
 	private:

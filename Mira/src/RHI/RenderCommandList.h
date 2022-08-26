@@ -144,6 +144,7 @@ namespace mira
 		}
 
 		const std::vector<std::shared_ptr<RenderCommand>>& get_commands() const { return m_cmds; };
+		bool empty() const { return m_cmds.empty(); }
 
 	private:
 		std::vector<std::shared_ptr<RenderCommand>> m_cmds;

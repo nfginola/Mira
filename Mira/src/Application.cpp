@@ -6,7 +6,6 @@
 #include "RHI/PipelineBuilder.h"
 #include "Window/Window.h"
 
-#include "Rendering/Renderer.h"
 #include "Rendering/MeshManager.h"
 #include "Rendering/GPUGarbageBin.h"
 
