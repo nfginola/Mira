@@ -31,7 +31,7 @@ Application::Application()
 
 
 	mira::GPUGarbageBin bin(1);
-	mira::GPUConstantManager constant_mgr(rd, &bin, 1);
+	mira::GPUConstantManager constant_mgr(rd, &bin, 3);
 	
 
 		//// Initialize mesh manager
@@ -135,7 +135,24 @@ Application::Application()
 		//((TestCB*)mem)->b = count == 1 ? 1.f : 0.f;
 		//((TestCB*)mem)->c = count == 2 ? 1.f : 0.f;
 		//((TestCB*)mem)->d = 0.8f;
-		//count = (count + 1) % 3;
+
+		data.a = count == 0 ? 1.f : 0.f;
+		data.b = count == 1 ? 1.f : 0.f;
+		data.c = count == 2 ? 1.f : 0.f;
+		data.d = 0.8f;
+		constant_mgr.upload(constant, (u8*)&data, sizeof(data));
+		constant_mgr.execute_copies(false);
+
+		data.a = count == 1 ? 1.f : 0.f;
+		data.b = count == 2 ? 1.f : 0.f;
+		data.c = count == 0 ? 1.f : 0.f;
+		data.d = 0.8f;
+		constant_mgr.upload(constant, (u8*)&data, sizeof(data));
+		constant_mgr.execute_copies(false);
+
+
+
+		count = (count + 1) % 3;
 
 		auto idx = constant_mgr.get_global_view(constant);
 		list.submit(mira::RenderCommandUpdateShaderArgs()
