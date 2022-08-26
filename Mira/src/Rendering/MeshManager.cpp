@@ -29,15 +29,14 @@ namespace mira
         }
 
         // Create index buffer
+        // No view used since it will be directly bound for vertex cache utilization
         {
             auto& buffer = m_index_buffer.buffer;
-            auto& view = m_index_buffer.full_view;
             auto& ator = m_index_buffer.ator;
             const u32 stride = sizeof(u32);
             const u32 count = size_spec.index_buffer_size / stride;
 
             buffer = m_rd->create_buffer(BufferDesc(size_spec.index_buffer_size, MemoryType::Default));
-            view = m_rd->create_view(buffer, BufferViewDesc(ViewType::ShaderResource, 0, stride, count));
             ator = VirtualBlockAllocator(stride, count);
         }
 
@@ -55,6 +54,22 @@ namespace mira
             m_submesh_metadata.full_view = m_rd->create_view(m_submesh_metadata.buffer, BufferViewDesc(ViewType::ShaderResource, 0, sizeof(SubmeshMetadata), MAX_UNIQUE_SUBMESHES));
             m_submesh_metadata.ator = VirtualBlockAllocator(sizeof(SubmeshMetadata), MAX_UNIQUE_SUBMESHES);
         }
+    }
+
+    MeshManager::~MeshManager()
+    {
+        for (auto& [_, storage] : m_device_local_buffers)
+        {
+            m_rd->free_buffer(storage.buffer);
+            m_rd->free_view(storage.full_view);
+        }
+
+        m_rd->free_buffer(m_submesh_metadata.buffer);
+        m_rd->free_view(m_submesh_metadata.full_view);
+
+        m_rd->free_buffer(m_index_buffer.buffer);
+
+        m_rd->free_buffer(m_staging_buffer.buffer);
     }
 
     MeshContainer MeshManager::load_mesh(const MeshSpecification& spec)

@@ -61,10 +61,10 @@ ID3D12DescriptorHeap* DX12DescriptorManager::get_gpu_dh_sampler() const
 
 void DX12DescriptorManager::init_heaps(ID3D12Device* device)
 {
-	m_gpu_dh_resource = std::make_unique<DX12DescriptorHeap>(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1'000'000, true);
+	m_gpu_dh_resource = std::make_unique<DX12DescriptorHeap>(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 100'000, true);
 	m_gpu_dh_sampler = std::make_unique<DX12DescriptorHeap>(device, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1'000, true);
-	m_cpu_dh_rtv = std::make_unique<DX12DescriptorHeap>(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 10'000, false);
-	m_cpu_dh_dsv = std::make_unique<DX12DescriptorHeap>(device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 10'000, false);
+	m_cpu_dh_rtv = std::make_unique<DX12DescriptorHeap>(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1'000, false);
+	m_cpu_dh_dsv = std::make_unique<DX12DescriptorHeap>(device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1'000, false);
 }
 
 void DX12DescriptorManager::init_allocators()

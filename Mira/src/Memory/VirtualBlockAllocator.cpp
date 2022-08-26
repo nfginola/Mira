@@ -8,7 +8,7 @@ namespace mira
 	{
 		m_total_size = block_size * block_count;
 		m_block_states.resize(block_count);
-		std::memset(m_block_states.data(), STATE_AVAILABLE, block_count);
+		//std::memset(m_block_states.data(), STATE_AVAILABLE, block_count);
 	}
 
 	VirtualBlockAllocator::~VirtualBlockAllocator()

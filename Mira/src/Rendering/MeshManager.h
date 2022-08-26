@@ -31,6 +31,7 @@ namespace mira
 
 	public:
 		MeshManager(RenderDevice* device, GPUGarbageBin* bin, const SizeSpecification& size_spec);
+		~MeshManager();
 
 		MeshContainer load_mesh(const MeshSpecification& spec);
 

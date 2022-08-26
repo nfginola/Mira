@@ -24,12 +24,7 @@ Application::Application()
 	auto be_dx = std::make_unique<mira::RenderBackend_DX12>(true);
 	auto rd = be_dx->create_device();
 
-	{
 		mira::GPUGarbageBin bin(2);
-
-		// Test mesh manager
-		mira::AssimpImporter sponza("assets\\models\\Sponza_gltf\\glTF\\Sponza.gltf");
-		auto res = sponza.get_result();
 
 		// Initialize mesh manager
 		mira::MeshManager::SizeSpecification spec{};
@@ -40,20 +35,25 @@ Application::Application()
 		spec.buffer_sizes[mira::VertexAttribute::Normal] = 10'000'000;
 		spec.buffer_sizes[mira::VertexAttribute::Tangent] = 10'000'000;
 		mira::MeshManager static_mesh_mgr(rd, &bin, spec);
-
+		
 		// Load mesh
-		mira::MeshManager::MeshSpecification load_spec{};
-		load_spec.data[mira::VertexAttribute::Position] = res->mesh.vertex_data[mira::VertexAttribute::Position];
-		load_spec.data[mira::VertexAttribute::UV] = res->mesh.vertex_data[mira::VertexAttribute::UV];
-		load_spec.data[mira::VertexAttribute::Normal] = res->mesh.vertex_data[mira::VertexAttribute::Normal];
-		load_spec.data[mira::VertexAttribute::Tangent] = res->mesh.vertex_data[mira::VertexAttribute::Tangent];
-		load_spec.indices = res->mesh.indices;
-		load_spec.submeshes = res->submeshes;
-		static_mesh_mgr.load_mesh(load_spec);
+		{
+			// Test mesh manager
+			mira::AssimpImporter sponza("assets\\models\\Sponza_gltf\\glTF\\Sponza.gltf");
+			auto res = sponza.get_result();
+
+			mira::MeshManager::MeshSpecification load_spec{};
+			load_spec.data[mira::VertexAttribute::Position] = res->mesh.vertex_data[mira::VertexAttribute::Position];
+			load_spec.data[mira::VertexAttribute::UV] = res->mesh.vertex_data[mira::VertexAttribute::UV];
+			load_spec.data[mira::VertexAttribute::Normal] = res->mesh.vertex_data[mira::VertexAttribute::Normal];
+			load_spec.data[mira::VertexAttribute::Tangent] = res->mesh.vertex_data[mira::VertexAttribute::Tangent];
+			load_spec.indices = res->mesh.indices;
+			load_spec.submeshes = res->submeshes;
+			static_mesh_mgr.load_mesh(load_spec);
+		}
 
 		std::cout << "Loaded!\n";
 
-	}
 
 	std::array<mira::Texture, 2> bb_textures;
 	std::array<mira::TextureView, 2> bb_rts;
