@@ -27,7 +27,7 @@ SamplerState point_samp : register(s1, space1);
 
 struct TestCB
 {
-    uint a, b, c, d;
+    float a, b, c, d;
 };
 
 float4 main(VS_OUT input) : SV_TARGET

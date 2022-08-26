@@ -100,22 +100,19 @@ Application::Application()
 
 	struct TestCB
 	{
-		u32 a, b, c, d;
+		f32 a, b, c, d;
 	};
 
-	//TestCB data{};
-	//data.a = 0.1f;
-	//data.b = 0.7f;
-	//data.c = 0.5f;
-	//data.d = 0.8f;
-	//mira::PersistentConstant constant = constant_mgr.allocate_persistent(sizeof(TestCB), (u8*)&data, sizeof(TestCB));
-	//constant_mgr.execute_copies(false);
+	TestCB data{};
+	data.a = 0.1f;
+	data.b = 0.7f;
+	data.c = 0.5f;
+	data.d = 0.8f;
+	mira::PersistentConstant constant = constant_mgr.allocate_persistent(sizeof(TestCB), (u8*)&data, sizeof(TestCB));
+	constant_mgr.execute_copies(false);
 
-	auto [mem, idx] = constant_mgr.allocate_transient(sizeof(TestCB));
-	((TestCB*)mem)->a = 0;
-	((TestCB*)mem)->b = 1;
-	((TestCB*)mem)->c = 1;
-	((TestCB*)mem)->d = 1;
+
+	u32 count{ 0 };
 
 	while (m_window->is_alive())
 	{
@@ -133,7 +130,14 @@ Application::Application()
 	
 		list.submit(mira::RenderCommandSetPipeline(blit_pipe));
 
-		//auto idx = constant_mgr.get_global_view(constant);
+		//auto [mem, idx] = constant_mgr.allocate_transient(sizeof(TestCB));
+		//((TestCB*)mem)->a = count == 0 ? 1.f : 0.f;
+		//((TestCB*)mem)->b = count == 1 ? 1.f : 0.f;
+		//((TestCB*)mem)->c = count == 2 ? 1.f : 0.f;
+		//((TestCB*)mem)->d = 0.8f;
+		//count = (count + 1) % 3;
+
+		auto idx = constant_mgr.get_global_view(constant);
 		list.submit(mira::RenderCommandUpdateShaderArgs()
 			.append_constant(idx)
 			.append_constant(1)

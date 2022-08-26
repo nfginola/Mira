@@ -122,7 +122,7 @@ namespace mira
 		auto src = m_dev->get_api_buffer(cmd.src);
 		auto dst = m_dev->get_api_buffer(cmd.dst);
 
-		m_list->CopyBufferRegion(src, cmd.src_offset, dst, cmd.dst_offset, cmd.size);
+		m_list->CopyBufferRegion(dst, cmd.dst_offset, src, cmd.src_offset, cmd.size);
 	}
 
 	void CommandCompiler_DX12::compile(const RenderCommandUpdateShaderArgs& cmd)

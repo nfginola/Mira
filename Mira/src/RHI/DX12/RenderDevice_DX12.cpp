@@ -711,7 +711,7 @@ namespace mira
 	{
 		HRESULT hr{ S_OK };
 
-		const u8 num_constants = 5;
+		const u8 num_constants = 9;
 
 		std::vector<D3D12_ROOT_PARAMETER> params;
 		//for (u32 reg = 0; reg < num_constants; ++reg)

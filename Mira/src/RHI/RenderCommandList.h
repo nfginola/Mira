@@ -127,11 +127,11 @@ namespace mira
 
 	struct RenderCommandUpdateShaderArgs : public RenderCommandTyped<RenderCommandType::UpdateShaderArgs>
 	{
-		std::array<u32, 6> constants{};
+		std::array<u32, 10> constants{};
 		u32 num_constants{ 0 };
 
 		RenderCommandUpdateShaderArgs() = default;
-		RenderCommandUpdateShaderArgs& append_constant(u32 constant) { constants[num_constants++] = constant; assert(num_constants < 6); return *this; }
+		RenderCommandUpdateShaderArgs& append_constant(u32 constant) { constants[num_constants++] = constant; assert(num_constants < 10); return *this; }
 	};
 
 

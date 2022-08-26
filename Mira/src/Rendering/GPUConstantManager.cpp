@@ -296,7 +296,7 @@ namespace mira
 			return {};
 
 		// On graphics queue for now to avoid any Copy -> Graphics queue sync
-		QueueType queue_copy_dest = QueueType::Copy;
+		QueueType queue_copy_dest = QueueType::Graphics;
 
 		CommandList cmdls[]{ m_rd->allocate_command_list(queue_copy_dest) };
 		m_rd->compile_command_list(cmdls[0], list);
