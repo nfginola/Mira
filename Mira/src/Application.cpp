@@ -11,7 +11,7 @@
 
 #include "Resource/AssimpImporter.h"
 
-#include "Memory/VirtualRingBuffer.h"
+#include "Rendering/GPUConstantManager.h"
 
 Application::Application()
 {
@@ -26,7 +26,9 @@ Application::Application()
 	auto rd = be_dx->create_device();
 
 
-		//mira::GPUGarbageBin bin(2);
+	mira::GPUGarbageBin bin(2);
+	mira::GPUConstantManager constant_mgr(rd, &bin, 2);
+	
 
 		//// Initialize mesh manager
 		//mira::MeshManager::SizeSpecification spec{};
@@ -92,6 +94,11 @@ Application::Application()
 			.build());
 	}
 
+	struct TestCB
+	{
+		f32 a, b, c, d;
+	};
+
 	while (m_window->is_alive())
 	{
 		m_window->pump_messages();
@@ -104,11 +111,24 @@ Application::Application()
 		list.submit(mira::RenderCommandBarrier()
 			.append(mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::Present, mira::ResourceState::RenderTarget, 0))
 		);
+
+		auto [mem, idx] = constant_mgr.allocate_transient(sizeof(TestCB));
+		((TestCB*)mem)->a = 0.1f;
+		((TestCB*)mem)->b = 0.7f;
+		((TestCB*)mem)->c = 0.5f;
+		((TestCB*)mem)->d = 0.8f;
+
+		list.submit(mira::RenderCommandUpdateShaderArgs()
+			.append_constant(idx)
+			.append_constant(1)
+			.append_constant(1)
+		);
 	
 		list.submit(mira::RenderCommandSetPipeline(blit_pipe));
 		list.submit(mira::RenderCommandBeginRenderPass(curr_bb_rp));
 		list.submit(mira::RenderCommandDraw(3, 1, 0, 0));
 		list.submit(mira::RenderCommandEndRenderPass());
+
 
 		list.submit(mira::RenderCommandBarrier()
 			.append(mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::RenderTarget, mira::ResourceState::Present, 0))
@@ -122,8 +142,12 @@ Application::Application()
 		// present to swapchain
 		sc->present(false);
 
+		bin.end_frame();
+
 		// wait for GPU frame
 		rd->flush();
+
+		bin.begin_frame();
 
 		rd->recycle_command_list(list_hdls[0]);
 	}

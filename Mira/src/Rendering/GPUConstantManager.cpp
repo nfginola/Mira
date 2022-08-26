@@ -263,8 +263,14 @@ namespace mira
 				copy requests to Version N on the CPU is halted until it is finished.
 
 		*/
-		m_rd->wait_for_gpu(m_staging_to_dl_syncs[m_curr_version]);
-		m_persistent_stagings[m_curr_version].ator.clear();			// Staging to Device Local for current version guaranteed to be complete on the GPU --> Free to clear
+		if (m_staging_to_dl_syncs[m_curr_version].has_value())
+		{
+			m_rd->wait_for_gpu(*m_staging_to_dl_syncs[m_curr_version]);
+			m_staging_to_dl_syncs[m_curr_version] = std::nullopt;
+		}
+
+		// Staging to Device Local for current version guaranteed to be complete on the GPU --> Free to clear
+		m_persistent_stagings[m_curr_version].ator.clear();			
 
 		// Clear all copy requests since previous execute copy
 		while (!m_persistents_with_copy_requests.empty())
@@ -298,6 +304,7 @@ namespace mira
 		// Advance version
 		m_curr_version = (m_curr_version + 1) % m_max_versions;
 
+		// Outside components can sync if they request for it
 		return generate_sync ? receipt : std::nullopt;
 	}
 }

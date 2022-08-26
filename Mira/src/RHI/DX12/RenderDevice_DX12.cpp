@@ -525,6 +525,11 @@ namespace mira
 				res.compiler->compile(*static_cast<RenderCommandCopyBuffer*>(cmd.get()));
 				break;
 			}
+			case RenderCommandUpdateShaderArgs::TYPE:
+			{
+				res.compiler->compile(*static_cast<RenderCommandUpdateShaderArgs*>(cmd.get()));
+				break;
+			}
 			default:
 				assert(false);
 			}
@@ -707,20 +712,27 @@ namespace mira
 		const u8 num_constants = 8;
 
 		std::vector<D3D12_ROOT_PARAMETER> params;
-		for (u32 reg = 0; reg < num_constants; ++reg)
-		{
-			D3D12_ROOT_PARAMETER param{};
-			param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-			param.Constants.RegisterSpace = 0;
-			param.Constants.ShaderRegister = reg;
-			param.Constants.Num32BitValues = 1;
+		//for (u32 reg = 0; reg < num_constants; ++reg)
+		//{
+		//	D3D12_ROOT_PARAMETER param{};
+		//	param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+		//	param.Constants.RegisterSpace = 0;
+		//	param.Constants.ShaderRegister = reg;
+		//	param.Constants.Num32BitValues = 1;
 
-			// Indirect Set Constant requires 2 for some reason to start working with Debug Validation Layer is on
-			if (reg == 0)
-				param.Constants.Num32BitValues = 2;
+		//	// Indirect Set Constant requires 2 for some reason to start working with Debug Validation Layer is on
+		//	if (reg == 0)
+		//		param.Constants.Num32BitValues = 2;
 
-			params.push_back(param);
-		}
+		//	params.push_back(param);
+		//}
+
+		D3D12_ROOT_PARAMETER param{};
+		param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+		param.Constants.RegisterSpace = 0;
+		param.Constants.ShaderRegister = 0;
+		param.Constants.Num32BitValues = num_constants + 1;		// Indirect Set Constant requires 2 for some reason to start working with Debug Validation Layer is on
+		params.push_back(param);
 
 		D3D12_ROOT_SIGNATURE_DESC rsd{};
 		rsd.NumParameters = (UINT)params.size();

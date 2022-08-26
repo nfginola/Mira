@@ -118,4 +118,13 @@ namespace mira
 
 		m_list->CopyBufferRegion(src, cmd.src_offset, dst, cmd.dst_offset, cmd.size);
 	}
+
+	void CommandCompiler_DX12::compile(const RenderCommandUpdateShaderArgs& cmd)
+	{
+		if (m_queue_type == QueueType::Graphics)
+			m_list->SetGraphicsRoot32BitConstants(0, cmd.num_constants, cmd.constants.data(), 0);
+		else if (m_queue_type == QueueType::Compute)
+			m_list->SetComputeRoot32BitConstants(0, cmd.num_constants, cmd.constants.data(), 0);
+
+	}
 }
