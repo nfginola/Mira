@@ -77,7 +77,7 @@ namespace mira
         Mesh_Storage storage{};
         RenderCommandList list;
 
-        // Handle each attribute
+        // Upload each attribute
         for (const auto& [attr, data] : spec.data)
         {
             auto total_size = data.size_bytes();
@@ -88,6 +88,7 @@ namespace mira
 
             // Reserve device-local memory
             auto dl_offset = m_device_local_buffers[attr].ator.allocate(total_size);
+            assert(dl_offset != (u32)-1);
 
             // GPU-GPU copy
             list.submit(RenderCommandCopyBuffer(
@@ -109,6 +110,7 @@ namespace mira
 
             // Reserve device-local memory
             auto dl_offset = m_index_buffer.ator.allocate(total_size);
+            assert(dl_offset != (u32)-1);
 
             // GPU-GPU copy
             list.submit(RenderCommandCopyBuffer(
@@ -120,6 +122,7 @@ namespace mira
             storage.indices_allocation = { dl_offset, total_size };
         }
 
+        // Track submeshes
         auto md_copy = spec.submeshes;
         for (const auto& submesh : spec.submeshes)
         {
@@ -144,6 +147,7 @@ namespace mira
 
             // Grab device-local memory
             const u64 dl_offset = m_submesh_metadata.ator.allocate(total_size);
+            assert(dl_offset != (u32)-1);
 
             // Assign global index based on device-local position
             auto start = dl_offset;
@@ -181,7 +185,7 @@ namespace mira
         MeshContainer container{};
         container.mesh = handle;
         container.num_submeshes = (u32)spec.submeshes.size();
-        container.manager_id = -1;                          // =============================== TO-DO
+        container.manager_id = -1;                                  // =============================== TO-DO
 
         return container;
     }

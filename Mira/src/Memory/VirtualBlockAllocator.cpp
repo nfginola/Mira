@@ -21,7 +21,8 @@ namespace mira
 
 		const u32 block_idx = find_contiguous_blocks(count);
 		if (block_idx == m_block_count)
-			assert(false);
+			//assert(false);
+			return -1;
 
 		set_blocks_state(block_idx, count, STATE_OCCUPIED);
 		return block_idx * m_block_size;

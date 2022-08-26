@@ -64,6 +64,10 @@ namespace mira
 		virtual u8* map(Buffer handle, u32 subresource = 0, std::pair<u32, u32> read_range = { 0, 0 }) = 0;
 		virtual void unmap(Buffer handle, u32 subresource = 0, std::pair<u32, u32> written_range = { 0, 0 }) = 0;
 
+		/*
+			Get Timestamp Frequency( queuetype )
+		*/
+
 
 
 

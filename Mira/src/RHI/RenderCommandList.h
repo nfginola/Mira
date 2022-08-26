@@ -56,6 +56,17 @@ namespace mira
 
 	struct RenderCommandDraw : public RenderCommandTyped<RenderCommandType::Draw>
 	{
+		/*
+			Pipeline pipeline;
+			BufferView index_buffer;
+
+			BOX Scissor		{ u16, u16, u16, u16 }
+			BOX Viewport	{ u16, u16, u16, u16 }
+
+			Compiler can track bound state and skip binding if already set (pipeline, index buffer, scissor and viewport)
+
+		*/	
+
 		u32 verts_per_instance{ 0 };
 		u32 instance_count{ 0 };
 		u32 vert_start{ 0 };

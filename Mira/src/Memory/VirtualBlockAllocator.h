@@ -17,6 +17,9 @@ namespace mira
 		// User needs to keep track of allocation size
 		void free(u64 offset, u64 size);
 
+		u32 get_block_size() const { return m_block_size; }
+		u64 get_total_size() const { return m_total_size; }
+
 	private:
 		//static constexpr u8 STATE_AVAILABLE{ 0 };
 		//static constexpr u8 STATE_OCCUPIED{ 1 };
