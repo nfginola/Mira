@@ -13,6 +13,7 @@ namespace mira
 
 		ID3D12GraphicsCommandList4* get_list() { return m_list.Get(); }
 		ID3D12CommandAllocator* get_allocator() { return m_ator.Get(); }
+		QueueType get_queue_type() const { return m_queue_type; }
 		
 		void compile(const RenderCommandDraw& cmd);
 		void compile(const RenderCommandSetPipeline& cmd);

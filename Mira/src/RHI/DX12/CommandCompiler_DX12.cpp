@@ -9,17 +9,23 @@ namespace mira
 		m_list(cmdl),
 		m_queue_type(queue)
 	{
+		/*
+			Ordering constraint between SetDescriptorHeap and SetRootSig
+			https://microsoft.github.io/DirectX-Specs/d3d/HLSL_SM_6_6_DynamicResources.html
+			" SetDescriptorHeaps must be called, passing the corresponding heaps, before a call to SetGraphicsRootSignature or SetComputeRootSignature "
+		*/
+		if (m_queue_type == QueueType::Graphics || m_queue_type == QueueType::Compute)
+		{
+			ID3D12DescriptorHeap* dheaps[] = { m_dev->get_api_global_resource_dheap() };
+			m_list->SetDescriptorHeaps(_countof(dheaps), dheaps);
+		}
+
+
 		// Set globals
 		if (m_queue_type == QueueType::Graphics)
 			m_list->SetGraphicsRootSignature(m_dev->get_api_global_rsig());
 		else if (m_queue_type == QueueType::Compute)
 			m_list->SetComputeRootSignature(m_dev->get_api_global_rsig());
-
-		if (m_queue_type == QueueType::Graphics || m_queue_type == QueueType::Compute)
-		{
-			ID3D12DescriptorHeap* dheaps[] = { m_dev->get_api_global_resource_dheap(), m_dev->get_api_global_sampler_dheap() };
-			m_list->SetDescriptorHeaps(2, dheaps);
-		}
 
 	}
 

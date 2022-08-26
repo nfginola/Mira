@@ -269,7 +269,7 @@ namespace mira
 			assert(desc.stride % 256 == 0);
 
 			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvd{};
-			cbvd.BufferLocation = buffer_storage.resource.Get()->GetGPUVirtualAddress();
+			cbvd.BufferLocation = buffer_storage.resource.Get()->GetGPUVirtualAddress() + desc.offset;
 			cbvd.SizeInBytes = desc.stride * desc.count;
 			m_device->CreateConstantBufferView(&cbvd, view_desc.cpu_handle(0));
 		}
@@ -393,7 +393,9 @@ namespace mira
 		D3D12_RANGE range{};
 		range.Begin = read_range.first;
 		range.End = read_range.second;
-		res.resource->Map(subresource, &range, (void**)&mapped);
+		HRESULT hr = res.resource->Map(subresource, &range, (void**)&mapped);
+		assert(SUCCEEDED(hr));
+
 		return mapped;
 	}
 
@@ -440,7 +442,7 @@ namespace mira
 		CommandList_Storage storage{};
 
 		// Re-use if any
-		auto& recycled_pool = m_recycled_ator_and_list;
+		auto& recycled_pool = m_recycled_ator_and_list[queue];
 		if (!recycled_pool.empty())
 		{
 			auto ator_list = recycled_pool.front();
@@ -480,7 +482,7 @@ namespace mira
 		storage.ator = res.compiler->get_allocator();
 		storage.list = res.compiler->get_list();
 
-		m_recycled_ator_and_list.push(storage);
+		m_recycled_ator_and_list[res.compiler->get_queue_type()].push(storage);
 	
 		m_command_lists[get_slot(handle.handle)] = std::nullopt;
 		m_rhp.free(handle);
@@ -709,7 +711,7 @@ namespace mira
 	{
 		HRESULT hr{ S_OK };
 
-		const u8 num_constants = 8;
+		const u8 num_constants = 5;
 
 		std::vector<D3D12_ROOT_PARAMETER> params;
 		//for (u32 reg = 0; reg < num_constants; ++reg)
@@ -737,7 +739,7 @@ namespace mira
 		D3D12_ROOT_SIGNATURE_DESC rsd{};
 		rsd.NumParameters = (UINT)params.size();
 		rsd.pParameters = params.data();
-		rsd.Flags = D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED | D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED;
+		rsd.Flags = D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED;
 
 		auto static_samplers = grab_static_samplers();
 		rsd.NumStaticSamplers = (u32)static_samplers.size();

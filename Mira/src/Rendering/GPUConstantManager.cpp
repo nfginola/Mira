@@ -11,6 +11,7 @@ namespace mira
 	{
 		m_persistent_allocations.resize(1);
 		m_staging_to_dl_syncs.resize(max_versions);
+		m_copy_cmdls.resize(max_versions);
 
 		m_persistent_buffers.resize(max_versions);
 		m_persistent_stagings.resize(max_versions);
@@ -125,7 +126,6 @@ namespace mira
 
 	PersistentConstant GPUConstantManager::allocate_persistent(u32 size, u8* init_data, u32 init_data_size, bool immutable)
 	{
-		assert(size % 256 == 0);
 		assert(size <= 1024);
 		assert(init_data_size <= size);
 
@@ -269,6 +269,10 @@ namespace mira
 			m_staging_to_dl_syncs[m_curr_version] = std::nullopt;
 		}
 
+		// Recycle the command list previously used for this version copy
+		if (m_copy_cmdls[m_curr_version].has_value())
+			m_rd->recycle_command_list(*m_copy_cmdls[m_curr_version]);
+
 		// Staging to Device Local for current version guaranteed to be complete on the GPU --> Free to clear
 		m_persistent_stagings[m_curr_version].ator.clear();			
 
@@ -292,11 +296,14 @@ namespace mira
 			return {};
 
 		// On graphics queue for now to avoid any Copy -> Graphics queue sync
-		QueueType queue_copy_dest = QueueType::Graphics;
+		QueueType queue_copy_dest = QueueType::Copy;
 
 		CommandList cmdls[]{ m_rd->allocate_command_list(queue_copy_dest) };
 		m_rd->compile_command_list(cmdls[0], list);
 		auto receipt = m_rd->submit_command_lists(cmdls, queue_copy_dest, {}, true);
+
+		// Keep cmdl for recycling
+		m_copy_cmdls[m_curr_version] = cmdls[0];
 
 		// Always keep sync (this is used know when staging buffer can be cleared)
 		m_staging_to_dl_syncs[m_curr_version] = *receipt;

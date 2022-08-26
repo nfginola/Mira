@@ -8,6 +8,8 @@ namespace mira
 		m_element_size(element_size),
 		m_element_count(element_count)
 	{
+		assert(m_element_count != 0);
+		assert(m_element_size != 0);
 	}
 
 	u64 VirtualRingBuffer::allocate()

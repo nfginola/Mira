@@ -219,7 +219,8 @@ namespace mira
 		std::vector<std::optional<CommandList_Storage>> m_command_lists;		
 		std::vector<std::optional<SyncPrimitive>> m_syncs;		
 
-		std::queue<CommandAtorAndList> m_recycled_ator_and_list;
+		//std::queue<CommandAtorAndList> m_recycled_ator_and_list;
+		std::unordered_map<QueueType, std::queue<CommandAtorAndList>> m_recycled_ator_and_list;
 		std::queue<SyncPrimitive> m_recycled_syncs;
 
 		// Important that this is destructed before resources and descriptor managers (need to free underlying texture)

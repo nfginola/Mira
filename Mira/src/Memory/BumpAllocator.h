@@ -14,7 +14,9 @@ namespace mira
 			m_internally_managed_memory(memory == nullptr ? true : false)
 		{
 			if (m_internally_managed_memory)
+			{
 				m_heap_start = (u8*)std::malloc(size);
+			}
 			else
 				m_heap_start = memory;
 

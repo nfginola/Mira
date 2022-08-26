@@ -91,9 +91,10 @@ namespace mira
 		std::queue<PersistentConstant> m_persistents_with_copy_requests;
 
 		// Persistent
-		std::vector<Persistent_Buffer> m_persistent_buffers;		// One per VERSION; 256/512/1024 allowed from single buffer (pool allocator)
-		std::vector<Staging_Buffer> m_persistent_stagings;			// One per VERSION;
-		std::vector<std::optional<SyncReceipt>> m_staging_to_dl_syncs;				// One per VERSION;
+		std::vector<Persistent_Buffer> m_persistent_buffers;					// One per VERSION; 256/512/1024 allowed from single buffer (pool allocator)
+		std::vector<Staging_Buffer> m_persistent_stagings;						// One per VERSION;
+		std::vector<std::optional<SyncReceipt>> m_staging_to_dl_syncs;			// One per VERSION;
+		std::vector<std::optional<CommandList>> m_copy_cmdls;					// One per VERSION; Held to recycle
 		u8 m_max_versions{ 0 };
 		u8 m_curr_version{ 0 };
 

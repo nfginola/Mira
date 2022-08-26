@@ -22,12 +22,16 @@ Application::Application()
 	m_window = std::make_unique<Window>(GetModuleHandle(NULL), win_proc_callback, c_width, c_height);
 
 	auto sclr = std::make_unique<mira::ShaderCompiler_DXC>();
+#ifdef _DEBUG
 	auto be_dx = std::make_unique<mira::RenderBackend_DX12>(true);
+#else
+	auto be_dx = std::make_unique<mira::RenderBackend_DX12>(false);
+#endif
 	auto rd = be_dx->create_device();
 
 
-	mira::GPUGarbageBin bin(2);
-	mira::GPUConstantManager constant_mgr(rd, &bin, 2);
+	mira::GPUGarbageBin bin(1);
+	mira::GPUConstantManager constant_mgr(rd, &bin, 1);
 	
 
 		//// Initialize mesh manager
@@ -96,14 +100,29 @@ Application::Application()
 
 	struct TestCB
 	{
-		f32 a, b, c, d;
+		u32 a, b, c, d;
 	};
+
+	//TestCB data{};
+	//data.a = 0.1f;
+	//data.b = 0.7f;
+	//data.c = 0.5f;
+	//data.d = 0.8f;
+	//mira::PersistentConstant constant = constant_mgr.allocate_persistent(sizeof(TestCB), (u8*)&data, sizeof(TestCB));
+	//constant_mgr.execute_copies(false);
+
+	auto [mem, idx] = constant_mgr.allocate_transient(sizeof(TestCB));
+	((TestCB*)mem)->a = 0;
+	((TestCB*)mem)->b = 1;
+	((TestCB*)mem)->c = 1;
+	((TestCB*)mem)->d = 1;
 
 	while (m_window->is_alive())
 	{
 		m_window->pump_messages();
 
-		auto curr_bb = sc->get_next_draw_surface();
+		//auto curr_bb = sc->get_next_draw_surface();
+		auto curr_bb = bb_textures[sc->get_next_draw_surface_idx()];
 		auto curr_bb_rp = bb_rps[sc->get_next_draw_surface_idx()];
 
 		mira::RenderCommandList list;
@@ -111,20 +130,16 @@ Application::Application()
 		list.submit(mira::RenderCommandBarrier()
 			.append(mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::Present, mira::ResourceState::RenderTarget, 0))
 		);
+	
+		list.submit(mira::RenderCommandSetPipeline(blit_pipe));
 
-		auto [mem, idx] = constant_mgr.allocate_transient(sizeof(TestCB));
-		((TestCB*)mem)->a = 0.1f;
-		((TestCB*)mem)->b = 0.7f;
-		((TestCB*)mem)->c = 0.5f;
-		((TestCB*)mem)->d = 0.8f;
-
+		//auto idx = constant_mgr.get_global_view(constant);
 		list.submit(mira::RenderCommandUpdateShaderArgs()
 			.append_constant(idx)
 			.append_constant(1)
 			.append_constant(1)
 		);
-	
-		list.submit(mira::RenderCommandSetPipeline(blit_pipe));
+
 		list.submit(mira::RenderCommandBeginRenderPass(curr_bb_rp));
 		list.submit(mira::RenderCommandDraw(3, 1, 0, 0));
 		list.submit(mira::RenderCommandEndRenderPass());
@@ -135,17 +150,16 @@ Application::Application()
 		);
 
 		std::array<mira::CommandList, 1> list_hdls;
-		list_hdls[0] = rd->allocate_command_list();
+		list_hdls[0] = rd->allocate_command_list(mira::QueueType::Graphics);
 		rd->compile_command_list(list_hdls[0], list);
-		rd->submit_command_lists(list_hdls);
+		rd->submit_command_lists(list_hdls);			// Sync with constant copy
 
 		// present to swapchain
 		sc->present(false);
 
 		bin.end_frame();
 
-		// wait for GPU frame
-		rd->flush();
+		rd->flush();			// wait for GPU frame
 
 		bin.begin_frame();
 
