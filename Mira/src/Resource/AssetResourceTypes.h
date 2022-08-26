@@ -4,7 +4,7 @@
 #include "../Rendering/Types/MaterialTypes.h"
 
 /*
-	Includes interop types
+	Inter-op structs
 */
 
 namespace mira

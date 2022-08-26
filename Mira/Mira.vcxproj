@@ -192,7 +192,6 @@ copy "$(ProjectDir)vendor\assimp-5.2.4\bin\MinSizeRel\assimp-vc143-mt.dll" "$(Ta
     <ClInclude Include="src\Memory\BumpAllocator.h" />
     <ClInclude Include="src\Memory\VirtualBlockAllocator.h" />
     <ClInclude Include="src\Rendering\Renderer.h" />
-    <ClInclude Include="src\Rendering\RenderingTypes.h" />
     <ClInclude Include="src\Rendering\Types\MeshTypes.h" />
     <ClInclude Include="src\RHI\DX12\CommandCompiler_DX12.h" />
     <ClInclude Include="src\Application.h" />

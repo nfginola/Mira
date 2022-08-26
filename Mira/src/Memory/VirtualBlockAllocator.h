@@ -1,5 +1,6 @@
 #pragma once
 #include "../Common.h"
+#include <bitset>
 
 namespace mira
 {
@@ -30,7 +31,6 @@ namespace mira
 		u32 m_block_size{ 0 };
 		u32 m_block_count{ 0 };
 
-		// Track used blocks
-		u8* m_block_states{ nullptr };
+		std::vector<u8> m_block_states;
 	};
 }

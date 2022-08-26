@@ -7,14 +7,12 @@ namespace mira
 		m_block_count(block_count)
 	{
 		m_total_size = block_size * block_count;
-		m_block_states = (u8*)std::malloc(block_count);
-		assert(m_block_states != nullptr);
-		std::memset(m_block_states, 0, block_count);
+		m_block_states.resize(block_count);
+		std::memset(m_block_states.data(), STATE_AVAILABLE, block_count);
 	}
 
 	VirtualBlockAllocator::~VirtualBlockAllocator()
 	{
-		std::free(m_block_states);
 	}
 
 	u64 VirtualBlockAllocator::allocate(u64 size)
@@ -23,7 +21,7 @@ namespace mira
 
 		const u32 block_idx = find_contiguous_blocks(count);
 		if (block_idx == m_block_count)
-			return -1;
+			assert(false);
 
 		set_blocks_state(block_idx, count, STATE_OCCUPIED);
 		return block_idx * m_block_size;
@@ -46,7 +44,9 @@ namespace mira
 			bool contiguous{ true };
 			for (u32 contiguous_block = 1; contiguous_block < count; ++contiguous_block)
 			{
-				if (m_block_states[block + contiguous_block] == STATE_OCCUPIED)
+
+				if (m_block_states[block + contiguous_block] == STATE_OCCUPIED ||		// Gap
+					block + contiguous_block >= m_block_count)							// Over limit
 				{
 					contiguous = false;
 					break;

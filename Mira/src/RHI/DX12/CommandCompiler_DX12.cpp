@@ -15,8 +15,12 @@ namespace mira
 		else if (m_queue_type == QueueType::Compute)
 			m_list->SetComputeRootSignature(m_dev->get_api_global_rsig());
 
-		ID3D12DescriptorHeap* dheaps[] = { m_dev->get_api_global_resource_dheap(), m_dev->get_api_global_sampler_dheap() };
-		m_list->SetDescriptorHeaps(2, dheaps);
+		if (m_queue_type == QueueType::Graphics || m_queue_type == QueueType::Compute)
+		{
+			ID3D12DescriptorHeap* dheaps[] = { m_dev->get_api_global_resource_dheap(), m_dev->get_api_global_sampler_dheap() };
+			m_list->SetDescriptorHeaps(2, dheaps);
+		}
+
 	}
 
 

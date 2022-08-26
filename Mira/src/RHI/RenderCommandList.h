@@ -109,6 +109,7 @@ namespace mira
 		RenderCommandCopyBuffer(Buffer src_in, u64 src_offset_in, Buffer dst_in, u64 dst_offset_in, u64 size_in) :
 			src(src_in),
 			dst(dst_in),
+			src_offset(src_offset_in),
 			dst_offset(dst_offset_in),
 			size(size_in) {}
 	};

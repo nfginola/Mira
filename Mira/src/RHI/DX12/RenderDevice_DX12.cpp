@@ -579,8 +579,8 @@ namespace mira
 
 			curr_queue->insert_signal(sync.fence);
 
-			auto sync_receipt = m_rhp.allocate<SyncReceipt>();
-			try_insert(m_syncs, std::move(sync), get_slot(sync_receipt.handle));
+			sync_receipt = m_rhp.allocate<SyncReceipt>();
+			try_insert(m_syncs, std::move(sync), get_slot(sync_receipt->handle));
 		}
 		return sync_receipt;
 	}

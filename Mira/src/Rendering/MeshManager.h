@@ -18,6 +18,7 @@ namespace mira
 		struct MeshSpecification
 		{
 			std::unordered_map<VertexAttribute, std::span<u8>> data;
+			std::span<u32> indices;
 			std::span<SubmeshMetadata> submeshes;
 		};
 
@@ -35,6 +36,7 @@ namespace mira
 
 		void free_mesh(Mesh handle);
 
+		// Used for binding so that vertex cache is utilized on draw
 		Buffer get_index_buffer() const;
 
 		// Get GPU-indexable identifier for per attribute buffer
@@ -65,9 +67,11 @@ namespace mira
 			// virtual allocation md: { offset, size } 
 			std::unordered_map<VertexAttribute, std::pair<u64, u64>> allocation_md;		
 			std::pair<u64, u64> submeshes_md_allocation;
+			std::pair<u64, u64> indices_allocation;
+
 		};
 
-		// Non-interleaved vertex data.
+		// Non-interleaved vertex data
 		struct DeviceLocal_Buffer
 		{
 			mira::Buffer buffer;

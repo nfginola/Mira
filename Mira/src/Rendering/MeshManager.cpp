@@ -84,6 +84,27 @@ namespace mira
             storage.allocation_md[attr] = { dl_offset, total_size };
         }
 
+        // Upload indices
+        {
+            auto total_size = spec.indices.size_bytes();
+
+            // Upload to staging
+            auto [mem, staging_offset] = m_staging_buffer.ator.allocate_with_offset(total_size);
+            std::memcpy(mem, spec.indices.data(), total_size);
+
+            // Reserve device-local memory
+            auto dl_offset = m_index_buffer.ator.allocate(total_size);
+
+            // GPU-GPU copy
+            list.submit(RenderCommandCopyBuffer(
+                m_staging_buffer.buffer, staging_offset,
+                m_index_buffer.buffer, dl_offset,
+                total_size));
+
+            // Track device-local allocation
+            storage.indices_allocation = { dl_offset, total_size };
+        }
+
         auto md_copy = spec.submeshes;
         for (const auto& submesh : spec.submeshes)
         {
@@ -159,6 +180,9 @@ namespace mira
             // Free device-local vertex data
             for (auto [attr, alloc_md] : res.allocation_md)
                 m_device_local_buffers[attr].ator.free(alloc_md.first, alloc_md.second);
+
+            // Free indices
+            m_index_buffer.ator.free(res.indices_allocation.first, res.indices_allocation.second);
 
             // Free submeshes metadata
             m_submesh_metadata.ator.free(res.submeshes_md_allocation.first, res.submeshes_md_allocation.second);

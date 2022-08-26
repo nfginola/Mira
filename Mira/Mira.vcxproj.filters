@@ -200,9 +200,6 @@
     <ClInclude Include="src\Rendering\Renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Rendering\RenderingTypes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\Memory\VirtualBumpAllocator.h">
       <Filter>Header Files</Filter>
     </ClInclude>

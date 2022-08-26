@@ -49,7 +49,7 @@ namespace mira
 			std::span<CommandList> lists,
 			QueueType queue = QueueType::Graphics,
 			std::optional<SyncReceipt> incoming_sync = std::nullopt,				// Synchronize with prior to command list execution
-			bool generate_sync = false) = 0;												// Generate sync after command list execution
+			bool generate_sync = false) = 0;										// Generate sync after command list execution
 
 
 		// Grab GPU-accessible resource handle
