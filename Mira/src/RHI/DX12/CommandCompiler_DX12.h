@@ -16,6 +16,7 @@ namespace mira
 		QueueType get_queue_type() const { return m_queue_type; }
 		
 		void compile(const RenderCommandDraw& cmd);
+		void compile(const RenderCommandDrawIndexed& cmd);
 		void compile(const RenderCommandSetPipeline& cmd);
 		void compile(const RenderCommandBeginRenderPass& cmd);
 		void compile(const RenderCommandEndRenderPass& cmd);
@@ -31,6 +32,8 @@ namespace mira
 
 		// Store barriers persistently
 		std::vector<std::vector<D3D12_RESOURCE_BARRIER>> m_barriers_per_submission;
+
+		Buffer m_current_ib;
 
 
 	};

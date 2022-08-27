@@ -11,7 +11,8 @@ namespace mira
 		ShaderResource,			// SRV
 		RaytracingAS,			// SRV (Raytracing Acceleration Structure)
 		UnorderedAccess,		// UAV
-		Constant				// CBV
+		Constant,				// CBV
+		Index					// IBV
 	};
 
 	// https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkImageSubresourceRange.html
@@ -54,6 +55,9 @@ namespace mira
 
 		TextureViewRange& set_array(u32 base, u32 count) { array_base = base; array_count = count; return *this; }
 		TextureViewRange& set_mips(u32 base, u32 count) { base_mip_level = base; mip_levels = count; return *this; }
+		TextureViewRange& set_min_lod_clamp(float value) { min_lod_clamp = value; return *this; }
+		TextureViewRange& set_depth_read_only() { depth_read_only = true; return *this; }
+		TextureViewRange& set_stencil_read_only() { stencil_read_only = true; return *this; }
 	};
 
 	struct BufferViewDesc

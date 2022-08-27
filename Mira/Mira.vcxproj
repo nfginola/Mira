@@ -186,9 +186,11 @@ copy "$(ProjectDir)vendor\assimp-5.2.4\bin\MinSizeRel\assimp-vc143-mt.dll" "$(Ta
     <ClCompile Include="src\Memory\VirtualRingBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Rendering\GPUTableDL.h" />
     <ClInclude Include="src\Memory\RingBuffer.h" />
     <ClInclude Include="src\Memory\PoolAllocator.h" />
     <ClInclude Include="src\Rendering\GPUConstantManager.h" />
+    <ClInclude Include="src\Rendering\GPUTableHost.h" />
     <ClInclude Include="src\Rendering\Types\GPUConstantTypes.h" />
     <ClInclude Include="src\Rendering\Types\MaterialTypes.h" />
     <ClInclude Include="src\Resource\AssetResourceTypes.h" />

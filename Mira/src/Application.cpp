@@ -13,6 +13,8 @@
 
 #include "Rendering/GPUConstantManager.h"
 
+#include "../shaders/ShaderInterop_Renderer.h"
+
 Application::Application()
 {
 	const UINT c_width = 1600;
@@ -30,45 +32,29 @@ Application::Application()
 	auto rd = be_dx->create_device();
 
 
-	mira::GPUGarbageBin bin(1);
-	mira::GPUConstantManager constant_mgr(rd, &bin, 3);
-	
-
-		//// Initialize mesh manager
-		//mira::MeshManager::SizeSpecification spec{};
-		//spec.index_buffer_size = sizeof(u32) * 10'000'000;
-		//spec.staging_size = 15'000'000;
-		//spec.buffer_sizes[mira::VertexAttribute::Position] = 10'000'000;
-		//spec.buffer_sizes[mira::VertexAttribute::UV] = 10'000'000;
-		//spec.buffer_sizes[mira::VertexAttribute::Normal] = 10'000'000;
-		//spec.buffer_sizes[mira::VertexAttribute::Tangent] = 10'000'000;
-		//mira::MeshManager static_mesh_mgr(rd, &bin, spec);
-		//
-		//// Load mesh
-		//{
-		//	// Test mesh manager
-		//	mira::AssimpImporter sponza("assets\\models\\Sponza_gltf\\glTF\\Sponza.gltf");
-		//	auto res = sponza.get_result();
-
-		//	mira::MeshManager::MeshSpecification load_spec{};
-		//	load_spec.data[mira::VertexAttribute::Position] = res->mesh.vertex_data[mira::VertexAttribute::Position];
-		//	load_spec.data[mira::VertexAttribute::UV] = res->mesh.vertex_data[mira::VertexAttribute::UV];
-		//	load_spec.data[mira::VertexAttribute::Normal] = res->mesh.vertex_data[mira::VertexAttribute::Normal];
-		//	load_spec.data[mira::VertexAttribute::Tangent] = res->mesh.vertex_data[mira::VertexAttribute::Tangent];
-		//	load_spec.indices = res->mesh.indices;
-		//	load_spec.submeshes = res->submeshes;
-		//	static_mesh_mgr.load_mesh(load_spec);
-		//}
-
-		//std::cout << "Loaded!\n";
-
-
 	std::array<mira::Texture, 2> bb_textures;
 	std::array<mira::TextureView, 2> bb_rts;
 	std::array<mira::RenderPass, 2> bb_rps;
 
 	// Create swapchain (requires at least 2 buffers)
 	mira::SwapChain* sc = rd->create_swapchain(m_window->get_hwnd(), 2);
+
+	// Create depth texture (single)
+	mira::Texture depth_tex;
+	mira::TextureView depth_view;
+	{
+		mira::TextureDesc desc{};
+		desc.width = c_width;
+		desc.height = c_height;
+		desc.usage = mira::UsageIntent::DepthStencil;
+		desc.format = mira::ResourceFormat::D32_FLOAT;
+		depth_tex = rd->create_texture(desc);
+
+		depth_view = rd->create_view(depth_tex,
+			mira::TextureViewDesc(
+				mira::ViewType::DepthStencil, 
+				mira::TextureViewRange(mira::TextureViewDimension::Texture2D, mira::ResourceFormat::D32_FLOAT).set_mips(0, 1)));
+	}
 
 	// Create backbuffer renderpasses
 	for (u32 i = 0; i < bb_rps.size(); ++i)
@@ -82,6 +68,9 @@ Application::Application()
 
 		bb_rps[i] = rd->create_renderpass(mira::RenderPassBuilder()
 			.append_rt(bb_rts[i], mira::RenderPassBeginAccessType::Clear, mira::RenderPassEndingAccessType::Preserve)
+			.add_depth_stencil(depth_view, 
+				mira::RenderPassBeginAccessType::Clear, mira::RenderPassEndingAccessType::Discard,		// depth
+				mira::RenderPassBeginAccessType::Discard, mira::RenderPassEndingAccessType::Discard)	// stencil
 			.build());
 	}
 
@@ -97,20 +86,69 @@ Application::Application()
 			.append_rt_format(mira::ResourceFormat::RGBA_8_UNORM)
 			.build());
 	}
-
-	struct TestCB
+	
+	// Create mesh pipeline
+	mira::Pipeline mesh_pipe;
 	{
-		f32 a, b, c, d;
-	};
+		auto vs = sclr->compile_from_file("mesh_vs.hlsl", mira::ShaderType::Vertex);
+		auto ps = sclr->compile_from_file("mesh_ps.hlsl", mira::ShaderType::Pixel);
 
-	TestCB data{};
-	data.a = 0.1f;
-	data.b = 0.7f;
-	data.c = 0.5f;
-	data.d = 0.8f;
-	mira::PersistentConstant constant = constant_mgr.allocate_persistent(sizeof(TestCB), (u8*)&data, sizeof(TestCB));
-	constant_mgr.execute_copies(false);
+		mesh_pipe = rd->create_graphics_pipeline(mira::GraphicsPipelineBuilder()
+			.set_shader(vs.get())
+			.set_shader(ps.get())
+			.append_rt_format(mira::ResourceFormat::RGBA_8_UNORM)
 
+			// Set depth on
+			.set_depth_format(mira::DepthFormat::D32)
+			.set_depth_stencil(mira::DepthStencilBuilder().set_depth_enabled(true))
+
+			.build());
+	}
+
+	/*
+
+		Wait..
+			GPUConstantManager can actually handle non-constant device-local data too..
+
+			--> Persistent buffer already uses block allocator
+			--> We can apply the multiple of 256 rule only when a Persistent Buffer with Constant-Buffer usage is declared
+
+			Rather, there is generic code in GPUConstantManager that can be extracted and use for other device-local data
+	
+	*/
+
+
+	mira::GPUGarbageBin bin(1);
+
+	// Create constant data helper
+	mira::GPUConstantManager constant_mgr(rd, &bin, 3);
+
+	// Initialize mesh manager
+	mira::MeshManager::SizeSpecification spec{};
+	spec.index_buffer_size = sizeof(u32) * 10'000'000;
+	spec.staging_size = 15'000'000;
+	spec.buffer_sizes[mira::VertexAttribute::Position] = 10'000'000;
+	spec.buffer_sizes[mira::VertexAttribute::UV] = 10'000'000;
+	spec.buffer_sizes[mira::VertexAttribute::Normal] = 10'000'000;
+	spec.buffer_sizes[mira::VertexAttribute::Tangent] = 10'000'000;
+	mira::MeshManager static_mesh_mgr(rd, &bin, spec);
+
+	// Load sponza
+	mira::MeshContainer sponza_mesh;
+	{
+
+		mira::AssimpImporter sponza("assets\\models\\Sponza_gltf\\glTF\\Sponza.gltf");
+		auto res = sponza.get_result();
+
+		mira::MeshManager::MeshSpecification load_spec{};
+		load_spec.data[mira::VertexAttribute::Position] = res->mesh.vertex_data[mira::VertexAttribute::Position];
+		load_spec.data[mira::VertexAttribute::UV] = res->mesh.vertex_data[mira::VertexAttribute::UV];
+		load_spec.data[mira::VertexAttribute::Normal] = res->mesh.vertex_data[mira::VertexAttribute::Normal];
+		load_spec.data[mira::VertexAttribute::Tangent] = res->mesh.vertex_data[mira::VertexAttribute::Tangent];
+		load_spec.indices = res->mesh.indices;
+		load_spec.submeshes = res->submeshes;
+		sponza_mesh = static_mesh_mgr.load_mesh(load_spec);	
+	}
 
 	u32 count{ 0 };
 
@@ -126,54 +164,52 @@ Application::Application()
 
 		list.submit(mira::RenderCommandBarrier()
 			.append(mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::Present, mira::ResourceState::RenderTarget, 0))
+			.append(mira::ResourceBarrier::transition(depth_tex, count++ == 0 ? mira::ResourceState::Common : mira::ResourceState::DepthRead, mira::ResourceState::DepthWrite, 0))
 		);
 	
-		list.submit(mira::RenderCommandSetPipeline(blit_pipe));
-
-		//auto [mem, idx] = constant_mgr.allocate_transient(sizeof(TestCB));
-		//((TestCB*)mem)->a = count == 0 ? 1.f : 0.f;
-		//((TestCB*)mem)->b = count == 1 ? 1.f : 0.f;
-		//((TestCB*)mem)->c = count == 2 ? 1.f : 0.f;
-		//((TestCB*)mem)->d = 0.8f;
-
-		data.a = count == 0 ? 1.f : 0.f;
-		data.b = count == 1 ? 1.f : 0.f;
-		data.c = count == 2 ? 1.f : 0.f;
-		data.d = 0.8f;
-		constant_mgr.upload(constant, (u8*)&data, sizeof(data));
-		constant_mgr.execute_copies(false);
-
-		data.a = count == 1 ? 1.f : 0.f;
-		data.b = count == 2 ? 1.f : 0.f;
-		data.c = count == 0 ? 1.f : 0.f;
-		data.d = 0.8f;
-		constant_mgr.upload(constant, (u8*)&data, sizeof(data));
-		constant_mgr.execute_copies(false);
-
-
-
-		count = (count + 1) % 3;
-
-		auto idx = constant_mgr.get_global_view(constant);
-		list.submit(mira::RenderCommandUpdateShaderArgs()
-			.append_constant(idx)
-			.append_constant(1)
-			.append_constant(1)
-		);
-
+		auto [mem, mesh_table_view] = constant_mgr.allocate_transient(sizeof(ShaderInterop_MeshTable));
+		((ShaderInterop_MeshTable*)mem)->submesh_md_array = static_mesh_mgr.get_submesh_metadata_buffer();
+		((ShaderInterop_MeshTable*)mem)->vert_pos_array = static_mesh_mgr.get_attribute_buffer(mira::VertexAttribute::Position);
+		((ShaderInterop_MeshTable*)mem)->vert_uv_array = static_mesh_mgr.get_attribute_buffer(mira::VertexAttribute::UV);
+		((ShaderInterop_MeshTable*)mem)->vert_nor_array = static_mesh_mgr.get_attribute_buffer(mira::VertexAttribute::Normal);
+		((ShaderInterop_MeshTable*)mem)->vert_tangent_array = static_mesh_mgr.get_attribute_buffer(mira::VertexAttribute::Tangent);
+		
+		auto [frame_mem, frame_view] = constant_mgr.allocate_transient(sizeof(ShaderInterop_PerFrame));
+		((ShaderInterop_PerFrame*)frame_mem)->view_matrix = DirectX::XMMatrixLookAtLH({ 3.f, 4.f, 0.f }, { -2.f, 3.f, 2.f }, { 0.f, 1.f, 0.f });
+		((ShaderInterop_PerFrame*)frame_mem)->projection_matrix = DirectX::XMMatrixPerspectiveFovLH(80.f * 3.1415 / 180.f, (float)c_width / c_height, 0.1f, 100.f);
+	
+		// Draw
 		list.submit(mira::RenderCommandBeginRenderPass(curr_bb_rp));
-		list.submit(mira::RenderCommandDraw(3, 1, 0, 0));
-		list.submit(mira::RenderCommandEndRenderPass());
+		{
+			auto [draw_mem, draw_view] = constant_mgr.allocate_transient(sizeof(ShaderInterop_PerDraw));
+			((ShaderInterop_PerDraw*)draw_mem)->world_matrix = DirectX::XMMatrixScaling(0.07f, 0.07f, 0.07f);
 
+			list.submit(mira::RenderCommandSetPipeline(mesh_pipe));
+			for (u32 sm = 0; sm < sponza_mesh.num_submeshes; ++sm)
+			{
+				list.submit(mira::RenderCommandUpdateShaderArgs()
+					.append_constant(mesh_table_view)
+					.append_constant(static_mesh_mgr.get_submesh_metadata_index(sponza_mesh.mesh, sm))
+					.append_constant(frame_view)
+					.append_constant(draw_view)
+				);
+
+				const auto& submesh_md = static_mesh_mgr.get_submesh_metadata(sponza_mesh.mesh, sm);
+				
+				list.submit(mira::RenderCommandDrawIndexed(static_mesh_mgr.get_index_buffer(), submesh_md.index_count, 1, submesh_md.index_start, 0, 0));
+			}
+		}
+		list.submit(mira::RenderCommandEndRenderPass());
 
 		list.submit(mira::RenderCommandBarrier()
 			.append(mira::ResourceBarrier::transition(curr_bb, mira::ResourceState::RenderTarget, mira::ResourceState::Present, 0))
+			.append(mira::ResourceBarrier::transition(depth_tex, mira::ResourceState::DepthWrite, mira::ResourceState::DepthRead, 0))
 		);
 
 		std::array<mira::CommandList, 1> list_hdls;
 		list_hdls[0] = rd->allocate_command_list(mira::QueueType::Graphics);
 		rd->compile_command_list(list_hdls[0], list);
-		rd->submit_command_lists(list_hdls);			// Sync with constant copy
+		rd->submit_command_lists(list_hdls);
 
 		// present to swapchain
 		sc->present(false);

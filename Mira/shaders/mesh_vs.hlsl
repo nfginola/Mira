@@ -9,44 +9,44 @@ struct VS_OUT
     uint instance_id : SV_InstanceID;
 };
 
-struct PushConstant 
+struct PushConstants 
 { 
-    uint value; 
+    uint mesh_table_id; 
+    uint submesh_id;
+    uint per_frame_id;
+    uint per_draw_id;
 };
 
-// Set on Indirect Command
-ConstantBuffer<PushConstant> per_draw_constant : register(b0, space0);
-
-ConstantBuffer<PushConstant> global_constant : register(b1, space0);
-ConstantBuffer<PushConstant> per_frame_constant : register(b2, space0);
+ConstantBuffer<PushConstants> g_push_constants : register(b0, space0);
 
 
 VS_OUT main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
 {
     VS_OUT output = (VS_OUT) 0;
-    // Indirection 1
-    StructuredBuffer<ShaderInterop_SceneInstanceID> per_instance = ResourceDescriptorHeap[per_draw_constant.value];
 
-    ConstantBuffer<ShaderInterop_PerFrame> pf_data = ResourceDescriptorHeap[per_frame_constant.value];
-    ConstantBuffer<ShaderInterop_BindlessGlobals> global_table = ResourceDescriptorHeap[global_constant.value];
-   
-    StructuredBuffer<ShaderInterop_PerInstance> scene_instances = ResourceDescriptorHeap[pf_data.scene_instance_table_id];
-    StructuredBuffer<ShaderInterop_Mesh> mesh_section_table = ResourceDescriptorHeap[global_table.mesh_sections_id];
-    StructuredBuffer<float3> positions = ResourceDescriptorHeap[global_table.pos_id];
-    StructuredBuffer<float2> uvs = ResourceDescriptorHeap[global_table.uv_id];
-    StructuredBuffer<float3> normals = ResourceDescriptorHeap[global_table.nor_id];
+    // Grab global table
+    ConstantBuffer<ShaderInterop_MeshTable> mesh_table = ResourceDescriptorHeap[g_push_constants.mesh_table_id];
     
-    ShaderInterop_PerInstance instance_data = scene_instances[per_instance[instance_id].object_id];
+    // Grab per frame data
+    ConstantBuffer<ShaderInterop_PerFrame> per_frame_data = ResourceDescriptorHeap[g_push_constants.per_frame_id];
     
-    ShaderInterop_Mesh mesh = mesh_section_table[instance_data.mesh];
+    // Grab per draw data
+    ConstantBuffer<ShaderInterop_PerDraw> per_draw_data = ResourceDescriptorHeap[g_push_constants.per_draw_id];
     
-    // Vertex offet to submesh in the big buffer
-    vertex_id += mesh.vertex_offset_in_big_buffer;
-     
-    output.position = mul(pf_data.proj_mat, mul(pf_data.view_mat, mul(instance_data.world_matrix, float4(positions[vertex_id].xyz, 1.f))));
+    // Grab submesh
+    StructuredBuffer<ShaderInterop_SubmeshMD> submeshes = ResourceDescriptorHeap[mesh_table.submesh_md_array];
+    ShaderInterop_SubmeshMD submesh = submeshes[g_push_constants.submesh_id];
+    
+    vertex_id += submesh.vert_start;    // Add vertex offset to submesh within mesh
+    
+    // Grab vertex tables and vertex data
+    StructuredBuffer<float3> positions = ResourceDescriptorHeap[mesh_table.vert_pos_array];
+    StructuredBuffer<float2> uvs = ResourceDescriptorHeap[mesh_table.vert_uv_array];
+    StructuredBuffer<float3> normals = ResourceDescriptorHeap[mesh_table.vert_nor_array];
+    StructuredBuffer<float3> tangents = ResourceDescriptorHeap[mesh_table.vert_tangent_array];
+    output.position = mul(per_frame_data.projection_matrix, mul(per_frame_data.view_matrix, mul(per_draw_data.world_matrix, float4(positions[vertex_id], 1.f))));
     output.uv = uvs[vertex_id];
-    output.normal = normals[vertex_id];
-    output.instance_id = instance_id;
+    output.normal = mul(per_draw_data.world_matrix, float4(normals[vertex_id], 1.f));
         
     return output;
 }

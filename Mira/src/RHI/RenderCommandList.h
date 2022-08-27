@@ -11,6 +11,7 @@ namespace mira
 		None,
 
 		Draw,
+		DrawIndexed,
 		SetPipeline,
 		BeginRenderPass,
 		EndRenderPass,
@@ -56,17 +57,6 @@ namespace mira
 
 	struct RenderCommandDraw : public RenderCommandTyped<RenderCommandType::Draw>
 	{
-		/*
-			Pipeline pipeline;
-			BufferView index_buffer;
-
-			BOX Scissor		{ u16, u16, u16, u16 }
-			BOX Viewport	{ u16, u16, u16, u16 }
-
-			Compiler can track bound state and skip binding if already set (pipeline, index buffer, scissor and viewport)
-
-		*/	
-
 		u32 verts_per_instance{ 0 };
 		u32 instance_count{ 0 };
 		u32 vert_start{ 0 };
@@ -77,6 +67,26 @@ namespace mira
 			verts_per_instance(verts_per_instance_in),
 			instance_count(instance_count_in),
 			vert_start(vert_start_in),
+			instance_start(instance_start_in) {}
+	};
+
+	struct RenderCommandDrawIndexed : public RenderCommandTyped<RenderCommandType::DrawIndexed>
+	{
+		Buffer index_buffer;
+
+		u32 indices_per_instance{ 0 };
+		u32 instance_count{ 0 };
+		u32 index_start{ 0 };
+		u32 vertex_start{ 0 };
+		u32 instance_start{ 0 };
+
+		RenderCommandDrawIndexed() = default;
+		RenderCommandDrawIndexed(Buffer index_buffer_in, u32 indices_per_instance_in, u32 instance_count_in, u32 index_start_in, u32 vertex_start_in, u32 instance_start_in) :
+			index_buffer(index_buffer_in),
+			indices_per_instance(indices_per_instance_in),
+			instance_count(instance_count_in),
+			index_start(index_start_in),
+			vertex_start(vertex_start_in),
 			instance_start(instance_start_in) {}
 	};
 

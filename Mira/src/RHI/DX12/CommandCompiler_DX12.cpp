@@ -35,6 +35,18 @@ namespace mira
 		m_list->DrawInstanced(cmd.verts_per_instance, cmd.instance_count, cmd.vert_start, cmd.instance_start);
 	}
 
+	void CommandCompiler_DX12::compile(const RenderCommandDrawIndexed& cmd)
+	{
+		auto ib = m_dev->get_api_buffer(cmd.index_buffer);
+		D3D12_INDEX_BUFFER_VIEW ibv{};
+		ibv.BufferLocation = ib->GetGPUVirtualAddress();
+		ibv.Format = DXGI_FORMAT_R32_UINT;
+		ibv.SizeInBytes = m_dev->get_api_buffer_size(cmd.index_buffer);
+
+		m_list->IASetIndexBuffer(&ibv);
+		m_list->DrawIndexedInstanced(cmd.indices_per_instance, cmd.instance_count, cmd.index_start, cmd.vertex_start, cmd.instance_start);
+	}
+
 	void CommandCompiler_DX12::compile(const RenderCommandSetPipeline& cmd)
 	{
 		m_list->SetPipelineState(m_dev->get_api_pipeline(cmd.pipeline));

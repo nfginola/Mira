@@ -79,52 +79,9 @@ namespace mira
 			});
 
 		return { allocation, global_id };
-
-
-		/*
-			Old code when we used one buffer per size for dynamic data
-		*/
-		//// Find suitable buffer
-		//u8* allocation{ nullptr };
-		//u64 allocation_offset{ 0 };
-		//u32 allocation_size{ 0 };
-		//Buffer suitable_buffer;
-		//for (u32 i = 0; i < m_transient_buffers.size(); ++i)
-		//{
-		//	auto& ator = m_transient_buffers[i].ator;
-		//	auto& buffer = m_transient_buffers[i].buffer;
-
-		//	if (size <= ator.get_element_size())
-		//	{
-		//		auto [alloc, offset] = ator.allocate_with_offset();
-
-		//		allocation = alloc;
-		//		allocation_offset = offset;
-		//		allocation_size = ator.get_element_size();
-		//		suitable_buffer = buffer;
-		//		
-		//		// Allocation success
-		//		if (allocation)
-		//			break;
-		//	}
-		//}
-
-		//assert(allocation != nullptr);
-
-		//// Create transient GPU-indexable view
-		//auto view = m_rd->create_view(suitable_buffer, BufferViewDesc(ViewType::Constant, (u32)allocation_offset, allocation_size));
-		//auto global_id = m_rd->get_global_descriptor(view);
-
-		//// Free this view when appropriate
-		//m_bin->push_deferred_deletion([this, view]()
-		//	{
-		//		m_rd->free_view(view);
-		//	});
-
-		//return { allocation, global_id };
 	}
 
-	PersistentConstant GPUConstantManager::allocate_persistent(u32 size, u8* init_data, u32 init_data_size, bool immutable)
+	PersistentConstant GPUConstantManager::allocate_persistent(u32 size, void* init_data, u32 init_data_size, bool immutable)
 	{
 		assert(size <= 1024);
 		assert(init_data_size <= size);
@@ -135,38 +92,7 @@ namespace mira
 
 		auto handle = m_handle_ator.allocate<PersistentConstant>();
 
-		// #1
-		{
-			// Set version
-			storage.curr_version = m_curr_version;
-
-			// Allocate memory
-			auto dl_offset = m_persistent_buffers[m_curr_version].ator.allocate(storage.allocated_size);
-			assert(dl_offset != (u64)-1);
-			storage.allocation_md = { dl_offset, storage.allocated_size };
-
-			// Create view for new memory
-			storage.view = m_rd->create_view(m_persistent_buffers[m_curr_version].buffer, BufferViewDesc(ViewType::Constant, (u32)dl_offset, storage.allocated_size));
-
-			if (init_data && init_data_size != 0)
-			{
-				// Set GPU-GPU copy request
-				storage.copy_request_func = [this, init_data, init_data_size, dl_offset, size](RenderCommandList& list)
-				{
-					// Copy data to staging memory
-					auto [staging, staging_offset] = m_persistent_stagings[m_curr_version].ator.allocate_with_offset(size);
-					std::memcpy(staging, init_data, init_data_size);
-
-					list.submit(RenderCommandCopyBuffer(
-						m_persistent_stagings[m_curr_version].buffer, staging_offset,
-						m_persistent_buffers[m_curr_version].buffer, dl_offset,
-						size));
-				};
-
-				
-				m_persistents_with_copy_requests.push(handle);
-			}
-		}
+		upload_persistent_to_device_local(handle, storage, init_data, init_data_size);
 
 		try_insert(m_persistent_allocations, storage, get_slot(handle.handle));
 
@@ -195,13 +121,12 @@ namespace mira
 		return m_rd->get_global_descriptor(res.view);
 	}
 
-	void GPUConstantManager::upload(PersistentConstant handle, u8* data, u32 size)
+	void GPUConstantManager::upload(PersistentConstant handle, void* data, u32 size)
 	{
 		auto& res = try_get(m_persistent_allocations, get_slot(handle.handle));
 
 		// User trying to update constant that they marked as immutable
-		if (res.immutable)
-			assert(false);		
+		assert(!res.immutable);
 
 		// User already requested an upload and haven't executed the copies yet!
 		assert(!res.copy_request_func);
@@ -220,63 +145,28 @@ namespace mira
 				m_rd->free_view(res_copy.view);
 			});
 
-		// #1
-		{
-			// Set new version
-			res.curr_version = m_curr_version;
-
-			// Re-allocate memory
-			auto dl_offset = m_persistent_buffers[m_curr_version].ator.allocate(res.allocated_size);
-			assert(dl_offset != (u64)-1);
-			res.allocation_md = { dl_offset, res.allocated_size };
-
-			// Create view for new memory
-			res.view = m_rd->create_view(m_persistent_buffers[m_curr_version].buffer, BufferViewDesc(ViewType::Constant, (u32)dl_offset, res.allocated_size));
-
-			// Set GPU-GPU copy request
-			res.copy_request_func = [this, &res, data, size, dl_offset](RenderCommandList& list)
-			{
-				// Copy data to staging memory
-				auto [staging, staging_offset] = m_persistent_stagings[m_curr_version].ator.allocate_with_offset(size);
-				std::memcpy(staging, data, size);
-
-				list.submit(RenderCommandCopyBuffer(
-					m_persistent_stagings[m_curr_version].buffer, staging_offset,
-					m_persistent_buffers[m_curr_version].buffer, dl_offset,
-					size));
-			};
-
-			m_persistents_with_copy_requests.push(handle);
-		}
+		upload_persistent_to_device_local(handle, res, data, size);
 	}
 
-	std::optional<SyncReceipt> GPUConstantManager::execute_copies(bool generate_sync)
+	std::optional<SyncReceipt> GPUConstantManager::execute_copies(std::optional<SyncReceipt> read_sync, bool generate_sync, QueueType submit_queue)
 	{
 		RenderCommandList list;
-
-		// If copies done on current version has not finished on the GPU, wait..
-		/*
-			We are constraining here that a Versioned copy can be dispatched only one at a time.
-
-			Essentially: 
-				If copies to Version N has not finished on the GPU,
-				copy requests to Version N on the CPU is halted until it is finished.
-
-		*/
+		
+		// CPU wait until staging-to-device copies for this version are finished
 		if (m_staging_to_dl_syncs[m_curr_version].has_value())
 		{
 			m_rd->wait_for_gpu(*m_staging_to_dl_syncs[m_curr_version]);
 			m_staging_to_dl_syncs[m_curr_version] = std::nullopt;
 		}
 
+		// Staging to Device Local for current version guaranteed to be complete on the GPU --> Free to clear
+		m_persistent_stagings[m_curr_version].ator.clear();
+
 		// Recycle the command list previously used for this version copy
 		if (m_copy_cmdls[m_curr_version].has_value())
 			m_rd->recycle_command_list(*m_copy_cmdls[m_curr_version]);
 
-		// Staging to Device Local for current version guaranteed to be complete on the GPU --> Free to clear
-		m_persistent_stagings[m_curr_version].ator.clear();			
-
-		// Clear all copy requests since previous execute copy
+		// Record all copy requests since previous execute copy
 		while (!m_persistents_with_copy_requests.empty())
 		{
 			auto handle = m_persistents_with_copy_requests.front();
@@ -295,17 +185,17 @@ namespace mira
 		if (list.empty())
 			return {};
 
-		// On graphics queue for now to avoid any Copy -> Graphics queue sync
-		QueueType queue_copy_dest = QueueType::Graphics;
-
-		CommandList cmdls[]{ m_rd->allocate_command_list(queue_copy_dest) };
+		// Execute
+		CommandList cmdls[]{ m_rd->allocate_command_list(submit_queue) };
 		m_rd->compile_command_list(cmdls[0], list);
-		auto receipt = m_rd->submit_command_lists(cmdls, queue_copy_dest, {}, true);
 
-		// Keep cmdl for recycling
+		// Read sync is to guarantee read completion of this Version before we proceed to copy to it. (critical if read occurs on different queue!)
+		auto receipt = m_rd->submit_command_lists(cmdls, submit_queue, read_sync, true);
+
+		// Keep cmdl for safe recycling on next wrap-around
 		m_copy_cmdls[m_curr_version] = cmdls[0];
 
-		// Always keep sync (this is used know when staging buffer can be cleared)
+		// Always keep sync (this is used to know when staging buffer can appropriately be cleared)
 		m_staging_to_dl_syncs[m_curr_version] = *receipt;
 
 		// Advance version
@@ -313,5 +203,35 @@ namespace mira
 
 		// Outside components can sync if they request for it
 		return generate_sync ? receipt : std::nullopt;
+	}
+	
+	void GPUConstantManager::upload_persistent_to_device_local(PersistentConstant handle, PersistentConstant_Storage& storage, void* data, u32 data_size)
+	{
+		// Set new version
+		storage.curr_version = m_curr_version;
+
+		// Re-allocate memory
+		auto dl_offset = m_persistent_buffers[m_curr_version].ator.allocate(storage.allocated_size);
+		assert(dl_offset != (u64)-1);
+		storage.allocation_md = { dl_offset, storage.allocated_size };
+
+
+		// Create view for new memory
+		storage.view = m_rd->create_view(m_persistent_buffers[m_curr_version].buffer, BufferViewDesc(ViewType::Constant, (u32)dl_offset, storage.allocated_size));
+
+		// Set GPU-GPU copy request
+		storage.copy_request_func = [this, &storage, data, data_size, dl_offset](RenderCommandList& list)
+		{
+			// Copy data to staging memory
+			auto [staging, staging_offset] = m_persistent_stagings[m_curr_version].ator.allocate_with_offset(data_size);
+			std::memcpy(staging, data, data_size);
+
+			list.submit(RenderCommandCopyBuffer(
+				m_persistent_stagings[m_curr_version].buffer, staging_offset,
+				m_persistent_buffers[m_curr_version].buffer, dl_offset,
+				data_size));
+		};
+
+		m_persistents_with_copy_requests.push(handle);
 	}
 }

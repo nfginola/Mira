@@ -37,16 +37,18 @@ namespace mira
 		std::pair<u8*, u32> allocate_transient(u32 size);
 
 		// Persistent (lives in device-local memory)
-		PersistentConstant allocate_persistent(u32 size, u8* init_data = nullptr, u32 init_data_size = 0, bool immutable = false);
+		PersistentConstant allocate_persistent(u32 size, void* init_data = nullptr, u32 init_data_size = 0, bool immutable = false);
 		void free_persistent(PersistentConstant handle);
 		u32 get_global_view(PersistentConstant handle) const;					// Grab GPU-indexable handle
 
-		void upload(PersistentConstant handle, u8* data, u32 size);				// Enqueue upload request for persistent constants
+		void upload(PersistentConstant handle, void* data, u32 size);				// Enqueue upload request for persistent constants
 
-		// Executes enqueued GPU-GPU copies if any
+		// Executes enqueued GPU-GPU copies if any.
 		// Do note that the sync receipt is consumed internally upon Version wrap-around! (execute copies updates Version)
 		// Use for external sync with caution.
-		std::optional<SyncReceipt> execute_copies(bool generate_sync);			
+		std::optional<SyncReceipt> execute_copies(std::optional<SyncReceipt> read_sync = {}, bool generate_sync = false, QueueType submit_queue = QueueType::Graphics);
+
+
 
 	private:
 		struct Persistent_Buffer
@@ -82,6 +84,9 @@ namespace mira
 			bool immutable{ false };		// Disables updating
 			u32 allocated_size{ 0 };
 		};
+
+	private:
+		void upload_persistent_to_device_local(PersistentConstant handle, PersistentConstant_Storage& storage, void* data, u32 data_size);
 
 	private:
 		RenderDevice* m_rd{ nullptr };

@@ -194,6 +194,13 @@ namespace mira
 			auto depth_api = to_internal(*desc.depth_stencil_desc);
 			assert(res.type == ViewType::DepthStencil);
 			depth_api.cpuDescriptor = res.view.cpu_handle(0);
+
+			auto& tex_res = try_get(m_textures, get_slot(res.tex.handle));				// grab underlying texture md
+
+			depth_api.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = tex_res.desc.depth_clear;
+			depth_api.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = tex_res.desc.stencil_clear;
+			// resolve not supported for now
+			
 			storage.depth_stencil = depth_api;
 		}
 
@@ -530,6 +537,11 @@ namespace mira
 			case RenderCommandUpdateShaderArgs::TYPE:
 			{
 				res.compiler->compile(*static_cast<RenderCommandUpdateShaderArgs*>(cmd.get()));
+				break;
+			}
+			case RenderCommandDrawIndexed::TYPE:
+			{
+				res.compiler->compile(*static_cast<RenderCommandDrawIndexed*>(cmd.get()));
 				break;
 			}
 			default:
