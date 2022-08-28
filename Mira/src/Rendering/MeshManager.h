@@ -32,7 +32,10 @@ namespace mira
 	public:
 		MeshManager(RenderDevice* device, GPUGarbageBin* bin, const SizeSpecification& size_spec);
 		~MeshManager();
-
+	
+		/*
+			Meshes are loaded on the Graphics queue.
+		*/
 		MeshContainer load_mesh(const MeshSpecification& spec);
 
 		void free_mesh(Mesh handle);

@@ -96,6 +96,9 @@
     <ClCompile Include="src\Memory\RingBuffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Resource\TextureImporter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Handles\HandlePool.h">
@@ -251,10 +254,7 @@
     <ClInclude Include="src\Memory\RingBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Rendering\GPUTableDL.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Rendering\GPUTableHost.h">
+    <ClInclude Include="src\Resource\TextureImporter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

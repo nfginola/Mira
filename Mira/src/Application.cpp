@@ -10,10 +10,12 @@
 #include "Rendering/GPUGarbageBin.h"
 
 #include "Resource/AssimpImporter.h"
+#include "Resource/TextureImporter.h"
 
 #include "Rendering/GPUConstantManager.h"
 
 #include "../shaders/ShaderInterop_Renderer.h"
+
 
 Application::Application()
 {
@@ -73,19 +75,6 @@ Application::Application()
 				mira::RenderPassBeginAccessType::Discard, mira::RenderPassEndingAccessType::Discard)	// stencil
 			.build());
 	}
-
-	// Create fullscreen blit pipeline
-	mira::Pipeline blit_pipe;
-	{
-		auto vs = sclr->compile_from_file("fullscreen_tri_vs.hlsl", mira::ShaderType::Vertex);
-		auto ps = sclr->compile_from_file("blit_ps.hlsl", mira::ShaderType::Pixel);
-
-		blit_pipe = rd->create_graphics_pipeline(mira::GraphicsPipelineBuilder()
-			.set_shader(vs.get())
-			.set_shader(ps.get())
-			.append_rt_format(mira::ResourceFormat::RGBA_8_UNORM)
-			.build());
-	}
 	
 	// Create mesh pipeline
 	mira::Pipeline mesh_pipe;
@@ -104,19 +93,6 @@ Application::Application()
 
 			.build());
 	}
-
-	/*
-
-		Wait..
-			GPUConstantManager can actually handle non-constant device-local data too..
-
-			--> Persistent buffer already uses block allocator
-			--> We can apply the multiple of 256 rule only when a Persistent Buffer with Constant-Buffer usage is declared
-
-			Rather, there is generic code in GPUConstantManager that can be extracted and use for other device-local data
-	
-	*/
-
 
 	mira::GPUGarbageBin bin(1);
 
@@ -150,13 +126,27 @@ Application::Application()
 		sponza_mesh = static_mesh_mgr.load_mesh(load_spec);	
 	}
 
+	// Test texture importer
+	mira::TextureImporter::initialize();
+
+	mira::TextureImporter importer("assets\\textures\\ultra.png");
+	auto tex_res = importer.get_result();
+
+
 	u32 count{ 0 };
+	std::array<mira::CommandList, 1> list_hdls;
 
 	while (m_window->is_alive())
 	{
 		m_window->pump_messages();
 
-		//auto curr_bb = sc->get_next_draw_surface();
+		// Wait for GPU
+		rd->flush();
+
+		if (count != 0)
+			rd->recycle_command_list(list_hdls[0]);
+		bin.begin_frame();
+
 		auto curr_bb = bb_textures[sc->get_next_draw_surface_idx()];
 		auto curr_bb_rp = bb_rps[sc->get_next_draw_surface_idx()];
 
@@ -176,7 +166,7 @@ Application::Application()
 		
 		auto [frame_mem, frame_view] = constant_mgr.allocate_transient(sizeof(ShaderInterop_PerFrame));
 		((ShaderInterop_PerFrame*)frame_mem)->view_matrix = DirectX::XMMatrixLookAtLH({ 3.f, 4.f, 0.f }, { -2.f, 3.f, 2.f }, { 0.f, 1.f, 0.f });
-		((ShaderInterop_PerFrame*)frame_mem)->projection_matrix = DirectX::XMMatrixPerspectiveFovLH(80.f * 3.1415 / 180.f, (float)c_width / c_height, 0.1f, 100.f);
+		((ShaderInterop_PerFrame*)frame_mem)->projection_matrix = DirectX::XMMatrixPerspectiveFovLH(80.f * 3.1415 / 180.f, (float)c_width / c_height, 0.1f, 500.f);
 	
 		// Draw
 		list.submit(mira::RenderCommandBeginRenderPass(curr_bb_rp));
@@ -206,7 +196,6 @@ Application::Application()
 			.append(mira::ResourceBarrier::transition(depth_tex, mira::ResourceState::DepthWrite, mira::ResourceState::DepthRead, 0))
 		);
 
-		std::array<mira::CommandList, 1> list_hdls;
 		list_hdls[0] = rd->allocate_command_list(mira::QueueType::Graphics);
 		rd->compile_command_list(list_hdls[0], list);
 		rd->submit_command_lists(list_hdls);
@@ -215,12 +204,6 @@ Application::Application()
 		sc->present(false);
 
 		bin.end_frame();
-
-		rd->flush();			// wait for GPU frame
-
-		bin.begin_frame();
-
-		rd->recycle_command_list(list_hdls[0]);
 	}
 
 	rd->flush();
