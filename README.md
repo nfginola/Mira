@@ -8,6 +8,6 @@ The aim of this project is to try to work with a 'database-like paradigm', meani
 This project can be seen as a successor to the "dx11-tech" project.
   
 Gallery:
-[Reverse Z](gallery/depth.jpg?raw=true "Reversed Z")
+[Reverse Z](gallery\depth.jpg?raw=true "Reversed Z")
   
 
