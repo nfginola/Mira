@@ -8,7 +8,7 @@ namespace mira
 	public:
 		static void initialize();
 
-		TextureImporter(const std::filesystem::path& path);
+		TextureImporter(const std::filesystem::path& path, bool generate_mips);
 
 		std::shared_ptr<ImportedTexture> get_result();
 

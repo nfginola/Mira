@@ -15,7 +15,7 @@ namespace mira
 		CMP_InitFramework();
 	}
 
-	TextureImporter::TextureImporter(const std::filesystem::path& path)
+	TextureImporter::TextureImporter(const std::filesystem::path& path, bool generate_mips)
 	{
 		CMP_MipSet mip_set_in;
 		memset(&mip_set_in, 0, sizeof(CMP_MipSet));
@@ -26,23 +26,29 @@ namespace mira
 			assert(false);
 		}
 
-		CMP_INT mip_requests = 3; // Request N miplevels for the source image
-		mip_requests = (std::min)(mip_requests, mip_set_in.m_nMaxMipLevels);
-		if (mip_set_in.m_nMipLevels <= 1) 
-		{
-			//------------------------------------------------------------------------
-			// Checks what the minimum image size will be for the requested mip levels
-			// if the request is too large, a adjusted minimum size will be returns
-			//------------------------------------------------------------------------
-			CMP_INT n_min_size = CMP_CalcMinMipSize(mip_set_in.m_nHeight, mip_set_in.m_nWidth, mip_requests);
+		CMP_INT mip_requests = 1;
 
-			//--------------------------------------------------------------
-			// now that the minimum size is known, generate the miplevels
-			// users can set any requested minumum size to use. The correct
-			// miplevels will be set acordingly.
-			//--------------------------------------------------------------
-			CMP_GenerateMIPLevels(&mip_set_in, n_min_size);
+		if (generate_mips)
+		{
+			mip_requests = 3; // Request N miplevels for the source image
+			mip_requests = (std::min)(mip_requests, mip_set_in.m_nMaxMipLevels);
+			if (mip_set_in.m_nMipLevels <= 1)
+			{
+				//------------------------------------------------------------------------
+				// Checks what the minimum image size will be for the requested mip levels
+				// if the request is too large, a adjusted minimum size will be returns
+				//------------------------------------------------------------------------
+				CMP_INT n_min_size = CMP_CalcMinMipSize(mip_set_in.m_nHeight, mip_set_in.m_nWidth, mip_requests);
+
+				//--------------------------------------------------------------
+				// now that the minimum size is known, generate the miplevels
+				// users can set any requested minumum size to use. The correct
+				// miplevels will be set acordingly.
+				//--------------------------------------------------------------
+				CMP_GenerateMIPLevels(&mip_set_in, n_min_size);
+			}
 		}
+		
 
 		m_result = std::make_shared<ImportedTexture>();
 	

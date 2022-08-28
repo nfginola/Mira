@@ -146,7 +146,7 @@ namespace mira
 		std::tuple<u32, u32, u32> dst_topleft;
 
 		// Source properties (describes the incoming data)
-		u32 src_offset{ 0 };		// offset in src buffer (?)
+		u64 src_offset{ 0 };		// offset in src buffer (?)
 		ResourceFormat src_format{ ResourceFormat::Unknown };
 		u32 src_width{ 0 };
 		u32 src_height{ 0 };

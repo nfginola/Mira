@@ -10,7 +10,7 @@ namespace mira
 	{
 		m_textures.resize(1);
 
-		constexpr u32 STAGING_SIZE = 100'000'000;
+		constexpr u32 STAGING_SIZE = 200'000'000;
 		m_staging = m_rd->create_buffer(BufferDesc(STAGING_SIZE, MemoryType::Upload));
 		m_staging_ator = BumpAllocator(STAGING_SIZE, m_rd->map(m_staging));
 	}
@@ -33,40 +33,49 @@ namespace mira
 		td.width = image_data_mipped[0].width;
 		td.height = image_data_mipped[0].height;
 		td.type = TextureType::Texture2D;
-		td.mip_levels = 1;
+		td.mip_levels = (u32)image_data_mipped.size();
 		td.memory_type = MemoryType::Default;
 		td.format = ResourceFormat::RGBA_8_UNORM;				// @ we should fix to support SRGB
 		storage.texture = m_rd->create_texture(td);
 
-		// Fill staging (only mip 0)
+		// D3D12 requirement
 		static constexpr auto TEX_ALIGNMENT = 512;
-		const auto original_rowpitch = image_data_mipped[0].width * sizeof(u32);	// Assuming 4 8-bit channels
-		const auto aligned_rowpitch = (1 + ((original_rowpitch - 1) / TEX_ALIGNMENT)) * TEX_ALIGNMENT;
 
-		auto [staging_mem, staging_offset] = m_staging_ator.allocate_with_offset(aligned_rowpitch * image_data_mipped[0].height);
-		for (u32 row = 0; row < image_data_mipped[0].height; ++row)
-		{
-			std::memcpy(
-				staging_mem + row * aligned_rowpitch,
-				image_data_mipped[0].data.data() + row * original_rowpitch,
-				original_rowpitch
-			);
-		}
-
-		// Record GPU-GPU copy
+		// Record copy for each mip
 		RenderCommandList list;
-		RenderCommandCopyBufferToImage cmd{};
-		cmd.dst = storage.texture;
-		cmd.src = m_staging;
-		
-		cmd.src_offset = staging_offset;
-		cmd.src_rowpitch = aligned_rowpitch;
-		cmd.src_width = image_data_mipped[0].width;
-		cmd.src_height = image_data_mipped[0].height;
-		cmd.src_format = td.format;	// OR UNKNOWN?
-		cmd.src_depth = 1;
+		for (u32 mip = 0; mip < image_data_mipped.size(); ++mip)
+		{
+			const TextureMipData& mip_data = image_data_mipped[mip];
 
-		list.submit(cmd);
+			const auto original_rowpitch = mip_data.width * sizeof(u32);									// Assuming 4 8-bit channels
+			const auto aligned_rowpitch = (1 + ((original_rowpitch - 1) / TEX_ALIGNMENT)) * TEX_ALIGNMENT;
+
+			auto [staging_mem, staging_offset] = m_staging_ator.allocate_with_offset(aligned_rowpitch * mip_data.height);
+			for (u32 row = 0; row < mip_data.height; ++row)
+			{
+				std::memcpy(
+					staging_mem + row * aligned_rowpitch,
+					mip_data.data.data() + row * original_rowpitch,
+					original_rowpitch
+				);
+			}
+
+			// Record GPU-GPU copy
+			RenderCommandCopyBufferToImage cmd{};
+			cmd.dst = storage.texture;
+			cmd.src = m_staging;
+
+			cmd.dst_subresource = mip;
+
+			cmd.src_offset = staging_offset;
+			cmd.src_rowpitch = aligned_rowpitch;
+			cmd.src_width = mip_data.width;
+			cmd.src_height = mip_data.height;
+			cmd.src_format = td.format;
+			cmd.src_depth = 1;
+
+			list.submit(cmd);
+		}
 
 		// Execute
 		CommandList cmdls[]{ m_rd->allocate_command_list() };
@@ -78,7 +87,7 @@ namespace mira
 
 		// Create view
 		TextureViewDesc tvd(ViewType::ShaderResource, TextureViewRange(TextureViewDimension::Texture2D, ResourceFormat::RGBA_8_UNORM)
-			.set_mips(0, 1));
+			.set_mips(0, image_data_mipped.size()));
 		storage.view = m_rd->create_view(storage.texture, tvd);
 
 		try_insert(m_textures, storage, get_slot(handle.handle));

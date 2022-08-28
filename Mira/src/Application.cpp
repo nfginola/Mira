@@ -127,7 +127,7 @@ Application::Application()
 	// Test texture importer
 	mira::TextureImporter::initialize();
 
-	mira::TextureImporter importer("assets\\textures\\ultra.png");
+	mira::TextureImporter importer("assets\\textures\\ultra.png", false);
 	auto tex_res = importer.get_result();
 	
 	// Test texture manager
