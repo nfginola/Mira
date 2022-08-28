@@ -16,6 +16,7 @@ namespace mira
 	{
 	public:
 		TextureManager(RenderDevice* rd, GPUGarbageBin* bin);
+		~TextureManager();
 
 		// Currently only handles 2D mipped textures
 		std::pair<LoadedTexture, u32> allocate(const std::string& name, const std::vector<TextureMipData>& image_data_mipped);

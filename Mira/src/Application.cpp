@@ -178,6 +178,7 @@ Application::Application()
 		// Draw
 		list.submit(mira::RenderCommandBeginRenderPass(curr_bb_rp));
 		{
+			// Testing: Using same PerDraw data for all submeshes
 			auto [draw_mem, draw_view] = constant_mgr.allocate_transient(sizeof(ShaderInterop_PerDraw));
 			((ShaderInterop_PerDraw*)draw_mem)->world_matrix = DirectX::XMMatrixScaling(0.07f, 0.07f, 0.07f);
 

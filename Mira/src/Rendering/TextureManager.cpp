@@ -10,9 +10,25 @@ namespace mira
 	{
 		m_textures.resize(1);
 
+		/*
+			The way the manager is setup currently (flush per texture load),
+			the staging buffer is required to fit at least the largest texture load passed to this manager.
+		*/
+
 		constexpr u32 STAGING_SIZE = 200'000'000;
 		m_staging = m_rd->create_buffer(BufferDesc(STAGING_SIZE, MemoryType::Upload));
 		m_staging_ator = BumpAllocator(STAGING_SIZE, m_rd->map(m_staging));
+	}
+	TextureManager::~TextureManager()
+	{
+		for (auto& storage : m_textures)
+		{
+			if (storage.has_value())
+			{
+				m_rd->free_texture(storage->texture);
+				m_rd->free_view(storage->view);
+			}
+		}
 	}
 	std::pair<LoadedTexture, u32> TextureManager::allocate(const std::string& name, const std::vector<TextureMipData>& image_data_mipped)
 	{
@@ -21,7 +37,7 @@ namespace mira
 		if (it_existing != m_loaded_textures.cend())
 		{
 			auto hdl = it_existing->second;
-			const auto& res = try_get(m_textures, hdl.handle);
+			const auto& res = try_get(m_textures, get_slot(hdl.handle));
 			return { hdl, m_rd->get_global_descriptor(res.view) };
 		} 
 
@@ -47,8 +63,8 @@ namespace mira
 		{
 			const TextureMipData& mip_data = image_data_mipped[mip];
 
-			const auto original_rowpitch = mip_data.width * sizeof(u32);									// Assuming 4 8-bit channels
-			const auto aligned_rowpitch = (1 + ((original_rowpitch - 1) / TEX_ALIGNMENT)) * TEX_ALIGNMENT;
+			const u32 original_rowpitch = mip_data.width * sizeof(u32);									// Assuming 4 8-bit channels
+			const u32 aligned_rowpitch = (1 + ((original_rowpitch - 1) / TEX_ALIGNMENT)) * TEX_ALIGNMENT;
 
 			auto [staging_mem, staging_offset] = m_staging_ator.allocate_with_offset(aligned_rowpitch * mip_data.height);
 			for (u32 row = 0; row < mip_data.height; ++row)
@@ -87,7 +103,7 @@ namespace mira
 
 		// Create view
 		TextureViewDesc tvd(ViewType::ShaderResource, TextureViewRange(TextureViewDimension::Texture2D, ResourceFormat::RGBA_8_UNORM)
-			.set_mips(0, image_data_mipped.size()));
+			.set_mips(0, (u32)image_data_mipped.size()));
 		storage.view = m_rd->create_view(storage.texture, tvd);
 
 		try_insert(m_textures, storage, get_slot(handle.handle));

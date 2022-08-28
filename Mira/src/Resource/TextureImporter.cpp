@@ -30,7 +30,9 @@ namespace mira
 
 		if (generate_mips)
 		{
-			mip_requests = 3; // Request N miplevels for the source image
+			constexpr u32 MAX_MIPS_REQUEST = 3;		// arbitrary number, for now.
+
+			mip_requests = MAX_MIPS_REQUEST;
 			mip_requests = (std::min)(mip_requests, mip_set_in.m_nMaxMipLevels);
 			if (mip_set_in.m_nMipLevels <= 1)
 			{
