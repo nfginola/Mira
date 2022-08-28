@@ -1,6 +1,7 @@
 #pragma once
 #include "ShaderTypes.h"
 #include "ResourceTypes.h"
+#include "../RHIDefines.h"
 
 namespace mira
 {
@@ -185,7 +186,13 @@ namespace mira
 	{
 		bool depth_enabled{ false };
 		DepthWriteMask depth_write_mask{ DepthWriteMask::All };
+
+#ifdef USE_REVERSE_Z
+		ComparisonFunc depth_func{ ComparisonFunc::GREATER };
+#else
 		ComparisonFunc depth_func{ ComparisonFunc::LESS };
+#endif
+
 
 		bool stencil_enabled{ false };
 		u8 stencil_read_mask{ 0xFF };

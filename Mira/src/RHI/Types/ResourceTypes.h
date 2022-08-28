@@ -110,7 +110,7 @@ namespace mira
 
 		std::array<float, 4> clear_color{ 0.f, 0.f, 0.f, 1.f };
 		u8 stencil_clear{ 0 };
-#ifdef USE_REVERSE_DEPTH
+#ifdef USE_REVERSE_Z
 		float depth_clear{ 0.f };
 #else
 		float depth_clear{ 1.f };

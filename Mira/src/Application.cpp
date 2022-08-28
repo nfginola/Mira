@@ -168,7 +168,12 @@ Application::Application()
 		
 		auto [frame_mem, frame_view] = constant_mgr.allocate_transient(sizeof(ShaderInterop_PerFrame));
 		((ShaderInterop_PerFrame*)frame_mem)->view_matrix = DirectX::XMMatrixLookAtLH({ 3.f, 4.f, 0.f }, { -2.f, 3.f, 2.f }, { 0.f, 1.f, 0.f });
+
+#ifdef USE_REVERSE_Z
+		((ShaderInterop_PerFrame*)frame_mem)->projection_matrix = DirectX::XMMatrixPerspectiveFovLH(80.f * 3.1415 / 180.f, (float)c_width / c_height, 500.f, 1.f);
+#else
 		((ShaderInterop_PerFrame*)frame_mem)->projection_matrix = DirectX::XMMatrixPerspectiveFovLH(80.f * 3.1415 / 180.f, (float)c_width / c_height, 0.1f, 500.f);
+#endif
 	
 		// Draw
 		list.submit(mira::RenderCommandBeginRenderPass(curr_bb_rp));

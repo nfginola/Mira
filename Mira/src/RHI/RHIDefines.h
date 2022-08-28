@@ -1,3 +1,3 @@
 #pragma once
 
-//#define USE_REVERSE_DEPTH
+#define USE_REVERSE_Z
