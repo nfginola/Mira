@@ -8,14 +8,24 @@ struct VS_IN
     uint instance_id : SV_InstanceID;
 };
 
-struct PushConstant
+struct PushConstants
 {
-    uint value;
+    uint mesh_table_id;
+    uint submesh_id;
+    uint per_frame_id;
+    uint per_draw_id;
+    uint tex_id;
 };
 
-ConstantBuffer<PushConstant> push_constant : register(b0, space0);
+ConstantBuffer<PushConstants> push_constant : register(b0, space0);
+
+SamplerState point_samp : register(s1, space1);
+
 
 float4 main(VS_IN input) : SV_TARGET
 {
+    Texture2D tex = ResourceDescriptorHeap[push_constant.tex_id];
+    return tex.Sample(point_samp, input.uv);
+    
     return float4(normalize(input.normal), 1.f);
 }

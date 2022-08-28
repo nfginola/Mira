@@ -27,25 +27,26 @@ namespace mira
 		}
 
 		CMP_INT mip_requests = 3; // Request N miplevels for the source image
+		mip_requests = (std::min)(mip_requests, mip_set_in.m_nMaxMipLevels);
 		if (mip_set_in.m_nMipLevels <= 1) 
 		{
 			//------------------------------------------------------------------------
 			// Checks what the minimum image size will be for the requested mip levels
 			// if the request is too large, a adjusted minimum size will be returns
 			//------------------------------------------------------------------------
-			CMP_INT nMinSize = CMP_CalcMinMipSize(mip_set_in.m_nHeight, mip_set_in.m_nWidth, mip_requests);
+			CMP_INT n_min_size = CMP_CalcMinMipSize(mip_set_in.m_nHeight, mip_set_in.m_nWidth, mip_requests);
 
 			//--------------------------------------------------------------
 			// now that the minimum size is known, generate the miplevels
 			// users can set any requested minumum size to use. The correct
 			// miplevels will be set acordingly.
 			//--------------------------------------------------------------
-			CMP_GenerateMIPLevels(&mip_set_in, nMinSize);
+			CMP_GenerateMIPLevels(&mip_set_in, n_min_size);
 		}
 
 		m_result = std::make_shared<ImportedTexture>();
-		m_result->type = MaterialTextureType::Diffuse;
 	
+		// Grab mips
 		for (u32 i = 0; i < mip_requests; ++i)
 		{
 			CMP_MipLevel* mip{ nullptr };
@@ -55,10 +56,13 @@ namespace mira
 			data.resize(mip->m_dwLinearSize);
 			std::memcpy(data.data(), mip->m_pbData, mip->m_dwLinearSize);
 
-			m_result->image_data_per_mip.push_back(std::move(data));
-		}
-			
+			TextureMipData mip_data{};
+			mip_data.data = std::move(data);
+			mip_data.width = mip->m_nWidth;
+			mip_data.height = mip->m_nHeight;
 
+			m_result->data_per_mip.push_back(std::move(mip_data));
+		}
 	}
 
 	std::shared_ptr<ImportedTexture> TextureImporter::get_result()

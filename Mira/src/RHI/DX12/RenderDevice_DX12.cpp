@@ -544,6 +544,11 @@ namespace mira
 				res.compiler->compile(*static_cast<RenderCommandDrawIndexed*>(cmd.get()));
 				break;
 			}
+			case RenderCommandCopyBufferToImage::TYPE:
+			{
+				res.compiler->compile(*static_cast<RenderCommandCopyBufferToImage*>(cmd.get()));
+				break;
+			}
 			default:
 				assert(false);
 			}
@@ -627,6 +632,11 @@ namespace mira
 	D3D12_RESOURCE_STATES RenderDevice_DX12::get_resource_state(ResourceState state) const
 	{
 		return to_internal(state);
+	}
+
+	DXGI_FORMAT RenderDevice_DX12::get_format(ResourceFormat format) const
+	{
+		return to_internal(format);
 	}
 
 	D3D_PRIMITIVE_TOPOLOGY RenderDevice_DX12::get_api_topology(Pipeline pipeline) const

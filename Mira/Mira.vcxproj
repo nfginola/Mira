@@ -189,6 +189,7 @@ copy "$(ProjectDir)vendor\compressonator\CMP_Framework_MT_DLL.dll" "$(TargetDir)
     <ClCompile Include="src\RHI\DX12\SwapChain_DX12.cpp" />
     <ClCompile Include="src\Window\Window.cpp" />
     <ClCompile Include="src\Resource\TextureImporter.cpp" />
+    <ClCompile Include="src\Rendering\TextureManager.cpp" />
     <ClCompile Include="vendor\D3D12MemoryAllocator\src\D3D12MemAlloc.cpp" />
     <ClCompile Include="src\Memory\VirtualRingBuffer.cpp" />
   </ItemGroup>
@@ -197,6 +198,7 @@ copy "$(ProjectDir)vendor\compressonator\CMP_Framework_MT_DLL.dll" "$(TargetDir)
     <ClInclude Include="src\Memory\PoolAllocator.h" />
     <ClInclude Include="src\Rendering\GPUConstantManager.h" />
     <ClInclude Include="src\Rendering\Types\GPUConstantTypes.h" />
+    <ClInclude Include="src\Rendering\Types\TextureTypes.h" />
     <ClInclude Include="src\Rendering\Types\MaterialTypes.h" />
     <ClInclude Include="src\Resource\AssetResourceTypes.h" />
     <ClInclude Include="src\Resource\AssimpImporter.h" />
@@ -242,6 +244,7 @@ copy "$(ProjectDir)vendor\compressonator\CMP_Framework_MT_DLL.dll" "$(TargetDir)
     <ClInclude Include="src\RHI\Types\ViewTypes.h" />
     <ClInclude Include="src\Window\Window.h" />
     <ClInclude Include="src\Resource\TextureImporter.h" />
+    <ClInclude Include="src\Rendering\TextureManager.h" />
     <ClInclude Include="vendor\D3D12MemoryAllocator\src\D3D12MemAlloc.h" />
     <ClInclude Include="src\Memory\VirtualBumpAllocator.h" />
     <ClInclude Include="src\Memory\VirtualRingBuffer.h" />

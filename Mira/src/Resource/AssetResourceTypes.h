@@ -28,9 +28,15 @@ namespace mira
 		ImportedMesh mesh;
 	};
 
+	struct TextureMipData
+	{
+		std::vector<u8> data;
+		u32 width{ 0 };
+		u32 height{ 0 };
+	};
+
 	struct ImportedTexture
 	{
-		MaterialTextureType type;
-		std::vector<std::vector<u8>> image_data_per_mip;
+		std::vector<TextureMipData> data_per_mip;
 	};
 }

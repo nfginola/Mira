@@ -91,6 +91,7 @@ namespace mira
 		u32 get_api_buffer_size(Buffer buffer) const;
 
 		D3D12_RESOURCE_STATES get_resource_state(ResourceState state) const;
+		DXGI_FORMAT get_format(ResourceFormat format) const;
 
 		D3D_PRIMITIVE_TOPOLOGY get_api_topology(Pipeline pipeline) const;
 		ID3D12PipelineState* get_api_pipeline(Pipeline pipeline) const;

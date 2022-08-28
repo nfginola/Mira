@@ -6,13 +6,14 @@
 #include "RHI/PipelineBuilder.h"
 #include "Window/Window.h"
 
-#include "Rendering/MeshManager.h"
 #include "Rendering/GPUGarbageBin.h"
+#include "Rendering/GPUConstantManager.h"
+#include "Rendering/MeshManager.h"
+#include "Rendering/TextureManager.h"
 
 #include "Resource/AssimpImporter.h"
 #include "Resource/TextureImporter.h"
 
-#include "Rendering/GPUConstantManager.h"
 
 #include "../shaders/ShaderInterop_Renderer.h"
 
@@ -112,17 +113,14 @@ Application::Application()
 	// Load sponza
 	mira::MeshContainer sponza_mesh;
 	{
-
 		mira::AssimpImporter sponza("assets\\models\\Sponza_gltf\\glTF\\Sponza.gltf");
 		auto res = sponza.get_result();
 
 		mira::MeshManager::MeshSpecification load_spec{};
-		load_spec.data[mira::VertexAttribute::Position] = res->mesh.vertex_data[mira::VertexAttribute::Position];
-		load_spec.data[mira::VertexAttribute::UV] = res->mesh.vertex_data[mira::VertexAttribute::UV];
-		load_spec.data[mira::VertexAttribute::Normal] = res->mesh.vertex_data[mira::VertexAttribute::Normal];
-		load_spec.data[mira::VertexAttribute::Tangent] = res->mesh.vertex_data[mira::VertexAttribute::Tangent];
 		load_spec.indices = res->mesh.indices;
 		load_spec.submeshes = res->submeshes;
+		for (auto& [attr, mem] : res->mesh.vertex_data)
+			load_spec.data[attr] = mem;
 		sponza_mesh = static_mesh_mgr.load_mesh(load_spec);	
 	}
 
@@ -131,7 +129,11 @@ Application::Application()
 
 	mira::TextureImporter importer("assets\\textures\\ultra.png");
 	auto tex_res = importer.get_result();
-
+	
+	// Test texture manager
+	mira::TextureManager tex_man(rd, &bin);
+	auto [tex_handle, tex_view] = tex_man.allocate("ultra", tex_res->data_per_mip);
+	
 
 	u32 count{ 0 };
 	std::array<mira::CommandList, 1> list_hdls;
@@ -182,6 +184,7 @@ Application::Application()
 					.append_constant(static_mesh_mgr.get_submesh_metadata_index(sponza_mesh.mesh, sm))
 					.append_constant(frame_view)
 					.append_constant(draw_view)
+					.append_constant(tex_view)
 				);
 
 				const auto& submesh_md = static_mesh_mgr.get_submesh_metadata(sponza_mesh.mesh, sm);

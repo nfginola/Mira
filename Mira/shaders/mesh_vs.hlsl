@@ -15,6 +15,7 @@ struct PushConstants
     uint submesh_id;
     uint per_frame_id;
     uint per_draw_id;
+    uint tex_id;            
 };
 
 ConstantBuffer<PushConstants> g_push_constants : register(b0, space0);

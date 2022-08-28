@@ -137,6 +137,30 @@ namespace mira
 		m_list->CopyBufferRegion(dst, cmd.dst_offset, src, cmd.src_offset, cmd.size);
 	}
 
+	void CommandCompiler_DX12::compile(const RenderCommandCopyBufferToImage& cmd)
+	{
+		D3D12_TEXTURE_COPY_LOCATION dst_loc{}, src_loc{};
+
+		dst_loc.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+		dst_loc.pResource = m_dev->get_api_texture(cmd.dst);
+		dst_loc.SubresourceIndex = cmd.dst_subresource;
+
+		src_loc.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+		src_loc.pResource = m_dev->get_api_buffer(cmd.src);
+		src_loc.PlacedFootprint.Offset = cmd.src_offset;				// ======= @todo: is this correct?
+
+		// Assert that the user has placed the data correctly according to alignment rules
+		assert(cmd.src_offset % D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT == 0);
+
+		src_loc.PlacedFootprint.Footprint.RowPitch = cmd.src_rowpitch;
+		src_loc.PlacedFootprint.Footprint.Depth = cmd.src_depth;
+		src_loc.PlacedFootprint.Footprint.Width = cmd.src_width;
+		src_loc.PlacedFootprint.Footprint.Height = cmd.src_height;
+		src_loc.PlacedFootprint.Footprint.Format = m_dev->get_format(cmd.src_format);
+
+		m_list->CopyTextureRegion(&dst_loc, std::get<0>(cmd.dst_topleft), std::get<1>(cmd.dst_topleft), std::get<2>(cmd.dst_topleft), &src_loc, nullptr);
+	}
+
 	void CommandCompiler_DX12::compile(const RenderCommandUpdateShaderArgs& cmd)
 	{
 		if (m_queue_type == QueueType::Graphics)

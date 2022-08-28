@@ -18,7 +18,8 @@ namespace mira
 		Barrier,
 		UpdateShaderArgs,
 
-		CopyBuffer
+		CopyBuffer,
+		CopyBufferToImage
 	};
 
 	struct RenderCommand
@@ -133,6 +134,28 @@ namespace mira
 			src_offset(src_offset_in),
 			dst_offset(dst_offset_in),
 			size(size_in) {}
+	};
+
+	struct RenderCommandCopyBufferToImage : public RenderCommandTyped<RenderCommandType::CopyBufferToImage>
+	{
+		Buffer src;
+		Texture dst;
+
+		// Destination properties
+		u32 dst_subresource{ 0 };
+		std::tuple<u32, u32, u32> dst_topleft;
+
+		// Source properties (describes the incoming data)
+		u32 src_offset{ 0 };		// offset in src buffer (?)
+		ResourceFormat src_format{ ResourceFormat::Unknown };
+		u32 src_width{ 0 };
+		u32 src_height{ 0 };
+		u32 src_depth{ 1 };
+		u32 src_rowpitch{ 0 };
+		// src BOX optional
+
+		RenderCommandCopyBufferToImage() = default;
+
 	};
 
 	struct RenderCommandUpdateShaderArgs : public RenderCommandTyped<RenderCommandType::UpdateShaderArgs>

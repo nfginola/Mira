@@ -22,6 +22,7 @@ namespace mira
 		void compile(const RenderCommandEndRenderPass& cmd);
 		void compile(const RenderCommandBarrier& cmd);
 		void compile(const RenderCommandCopyBuffer& cmd);
+		void compile(const RenderCommandCopyBufferToImage& cmd);
 		void compile(const RenderCommandUpdateShaderArgs& cmd);
 
 	private:
